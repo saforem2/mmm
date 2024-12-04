@@ -4,6 +4,8 @@ venvs/
 data/
 deps/
 ignore/
+plots/
+test-dist-plots/
 
 
 # Byte-compiled / optimized / DLL files
