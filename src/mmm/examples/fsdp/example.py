@@ -216,7 +216,14 @@ def fsdp_main(args: argparse.Namespace) -> None:
         summary = ez.summarize_dict(metrics)
         logger.info(f"{summary}")
 
-    logger.info(f"{args.epochs + 1} took {time.perf_counter() - start:.1f}s")
+    logger.info(
+        " ".join(
+            [
+                f"{args.epochs + 1} epochs took",
+                f"{time.perf_counter() - start:.1f}s"
+            ]
+        )
+    )
     dist.barrier()
 
     if args.save_model:
