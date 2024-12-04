@@ -1,5 +1,4 @@
-# mmm
-m³: Multi-Model Models (`mmm`)
+# `mmm`: Multi-Model Models
 
 ## 🐣 Getting Started
 
