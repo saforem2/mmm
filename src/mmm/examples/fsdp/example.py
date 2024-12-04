@@ -79,8 +79,8 @@ def train(model, train_loader, optimizer, epoch, sampler=None):
     dist.all_reduce(ddp_loss, op=dist.ReduceOp.SUM)
     return {
         "epoch": epoch,
-        "train_loss": ddp_loss[0] / ddp_loss[1],
         "dt": t1 - t0,
+        "train_loss": ddp_loss[0] / ddp_loss[1],
     }
 
 
@@ -111,16 +111,16 @@ def test(model, test_loader):
     }
 
 
-def prepare_data(outdir: Optional[str | Path] = None) -> dict:
+def prepare_data(outdir: Optional[str] = None) -> dict:
     outdir = "./data" if outdir is None else outdir
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
 
     dataset1 = datasets.MNIST(
-        "./data", train=True, download=True, transform=transform
+        outdir, train=True, download=True, transform=transform
     )
-    dataset2 = datasets.MNIST("./data", train=False, transform=transform)
+    dataset2 = datasets.MNIST(outdir, train=False, transform=transform)
 
     sampler1 = DistributedSampler(
         dataset1, rank=RANK, num_replicas=WORLD_SIZE, shuffle=True
@@ -212,7 +212,7 @@ def fsdp_main(args: argparse.Namespace) -> None:
         summary = ez.summarize_dict(metrics)
         logger.info(f"{summary}")
 
-    logger.info(f"\nTook: {time.perf_counter() - start:.1f}s")
+    logger.info(f"{args.epochs + 1} took {time.perf_counter() - start:.1f}s")
     dist.barrier()
 
     if args.save_model:
@@ -277,12 +277,6 @@ def parse_args() -> argparse.Namespace:
         default=0.7,
         metavar="M",
         help="Learning rate step gamma (default: 0.7)",
-    )
-    parser.add_argument(
-        "--no-cuda",
-        action="store_true",
-        default=False,
-        help="disables CUDA training",
     )
     parser.add_argument(
         "--seed",
