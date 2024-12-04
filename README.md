@@ -32,8 +32,8 @@ launch python3 \
 <details closed><summary>Output:</summary>
 
 ```bash
-#[🌻][08:29:26 AM][foremans@x1921c0s2b0n0][…/mmm][🌱 main][!?]
-$ NO_COLOR=1 CCL_LOG_LEVEL=ERROR launch python3 -Wignore src/mmm/examples/fsdp/example.py --lr 1e-4 --batch-size 128 --epochs 10 | tee train.log
+# e.g. on Sunspot:
+$ launch python3 -Wignore src/mmm/examples/fsdp/example.py --lr 1e-4 --batch-size 128 --epochs 10
 Disabling local launch: multi-node application
 Connected to tcp://x1921c0s2b0n0.hostmgmt2000.cm.americas.sgi.com:7919
 Found executable /lus/gila/projects/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
@@ -119,6 +119,7 @@ Launching application 515ccad8-5eee-498e-8782-74612e854f7c
 [2024-12-04 08:30:02,214][INFO][ezpz.plot]: Appending plot to: plots/tplots/dt.txt
 [2024-12-04 08:30:02,219][INFO][ezpz.plot]: Appending plot to: plots/tplots/train_loss.txt
 [2024-12-04 08:30:02,225][INFO][ezpz.plot]: Appending plot to: plots/tplots/test_loss.txt
+
                             dt [2024-12-04-083002]
     ┌─────────────────────────────────────────────────────────────────────┐
 12.9┤▌                                                                    │
@@ -139,11 +140,11 @@ Launching application 515ccad8-5eee-498e-8782-74612e854f7c
     │      ▚                                                              │
     │      ▝▖                                                             │
  0.5┤       ▚▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▀▀▀▀▀▀▀▀▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
-    └┬───────┬──────┬────�[2024-12-04 08:30:02,231][INFO][ezpz.plot]: Appending plot to: plots/tplots/test_acc.txt
-�──┬──────┬───────┬──────┬───────┬──────┬───────┬┘
+    └┬───────┬──────┬───────┬──────┬───────┬──────┬───────┬──────┬───────┬┘
      1       2      3       4      5       6      7       8      9      10
 dt                                   epoch
 text saved in /lus/gila/projects/Aurora_deployment/foremans/projects/saforem2/mmm/plots/tplots/dt.txt
+
                         train_loss [2024-12-04-083002]
     ┌─────────────────────────────────────────────────────────────────────┐
 1.80┤▌                                                                    │
@@ -168,6 +169,7 @@ text saved in /lus/gila/projects/Aurora_deployment/foremans/projects/saforem2/mm
      1       2      3       4      5       6      7       8      9      10
 train_loss                           epoch
 text saved in /lus/gila/projects/Aurora_deployment/foremans/projects/saforem2/mmm/plots/tplots/train_loss.txt
+
                          test_loss [2024-12-04-083002]
     ┌─────────────────────────────────────────────────────────────────────┐
 1.09┤▌                                                                    │
