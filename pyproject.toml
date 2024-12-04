@@ -1,0 +1,145 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+# requires = ["setuptools>=70.0.0", "wheel"]
+# build-backend = "setuptools.build_meta"
+
+[project]
+name = "mmm"
+description = ''
+readme = "README.md"
+requires-python = ">=3.8"
+# license = ""
+keywords = []
+authors = [{ name = "Sam Foreman", email = "saforem2@gmail.com" }]
+classifiers = [ # Optional, for a list of valid classifiers, see https://pypi.org/classifiers/
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+]
+# classifiers = [
+#   "Development Status :: 4 - Beta",
+#   "Programming Language :: Python",
+#   "Programming Language :: Python :: 3.8",
+#   "Programming Language :: Python :: 3.9",
+#   "Programming Language :: Python :: 3.10",
+#   "Programming Language :: Python :: 3.11",
+#   "Programming Language :: Python :: 3.12",
+#   "Programming Language :: Python :: Implementation :: CPython",
+#   "Programming Language :: Python :: Implementation :: PyPy",
+# ]
+dependencies = [
+  "mpi4py",
+  "torch",
+  "joblib",
+  "rich",
+  "hydra-core",
+  # "wandb",
+  "hydra-colorlog",
+  "transformers",
+  "datasets",
+  "tiktoken",
+  "wandb",
+  "tqdm",
+  "ambivalent @ git+https://github.com/saforem2/ambivalent",
+  "ezpz @ git+https://github.com/saforem2/ezpz",
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+  "pudb",
+  "matplotx",
+  "nodejs",
+  "pynvim",
+  "neovim",
+  "pyright",
+  "ruff",
+  "ruff-lsp",
+  "ipython",
+  "ptipython",
+]
+
+[project.urls]
+Documentation = "https://github.com/saforem2/mmm"
+Issues = "https://github.com/saforem2/mmm/issues"
+Source = "https://github.com/saforem2/mmm"
+
+# [project.scripts] # Optional
+# example-cli-command = "template.module1:main" # executes `template.module1.main` when "example-cli-command" is run from CLI
+
+# Tools settings -------------------------------------------------------------------------------------------------------
+[tool.ruff]
+line-length = 79
+
+
+[tool.hatch.version]
+path = "src/mmm/__about__.py"
+
+[tool.hatch.build]
+exclude = ["src/mmm/outputs/", "**old**"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.sdist]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mmm"]
+
+# [tool.hatch.envs.default]
+# dependencies = [
+#   "pytest",
+#   "pytest-cov",
+# ]
+# [tool.hatch.envs.default.scripts]
+# cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=src/mmm --cov=tests"
+# no-cov = "cov --no-cov"
+#
+# [[tool.hatch.envs.test.matrix]]
+# python = ["38", "39", "310", "311"]
+
+# [tool.coverage.run]
+# branch = true
+# parallel = true
+# omit = [
+#   "mmm/__about__.py",
+# ]
+#
+# [tool.coverage.report]
+# exclude_lines = [
+#   "no cov",
+#   "if __name__ == .__main__.:",
+#   "if TYPE_CHECKING:",
+# ]
+# [tool.setuptools]  # configuration specific to the `setuptools` build backend.
+# packages = { find = { where = ["."], include = ["template", "template.*"] } }
+# package-data = { "sample" = ["*.yaml"] }
+#
+# [tool.setuptools.dynamic]
+# version = { attr = "template.__version__" }
+#
+# [tool.docformatter]
+# wrap-summaries = 120
+# wrap-descriptions = 120
+# in-place = true
+# pre-summary-newline = true
+# close-quotes-on-newline = true
+#
+# [tool.codespell]
+# ignore-words-list = "crate,nd,strack,dota,ane,segway,fo,gool,winn,commend"
+# skip = '*.csv,*venv*,docs/??/,docs/mkdocs_??.yml'
