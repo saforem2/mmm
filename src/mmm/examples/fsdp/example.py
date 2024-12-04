@@ -118,8 +118,12 @@ def prepare_data(outdir: Optional[str] = None) -> dict:
     )
 
     dataset1 = datasets.MNIST(
-        outdir, train=True, download=True, transform=transform
+        outdir,
+        train=True,
+        download=True,
+        transform=transform,
     )
+    torch.distributed.barrier()
     dataset2 = datasets.MNIST(outdir, train=False, transform=transform)
 
     sampler1 = DistributedSampler(
