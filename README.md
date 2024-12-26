@@ -101,7 +101,7 @@ launch python3 -m mmm.trainer.vit
 
 <details closed><summary>Output:</summary>
 
-```bash
+```python
 Disabling local launch: multi-node application
 Connected to tcp://x4712c2s1b0n0.hostmgmt2712.cm.aurora.alcf.anl.gov:7919
 Found executable /flare/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
@@ -344,15 +344,15 @@ Application fbf7ec7d resources: utime=5417s stime=893s maxrss=4521792KB inblock=
 ## 📝 Example: FSDP
 
 ```bash
-launch python3 -Wignore -m mmm.trainer.fsdp
+launch python3 -m mmm.trainer.fsdp
 ```
 
 <details closed><summary>Output:</summary>
 
-```bash
+```python
 #[🐍 aurora_nre_models_frameworks-2024.2.1_u1](👻 aurora_nre_models_frameworks-2024.2.1_u1)
 #[🤖][02:27:58 PM][foremans@x4211c7s0b0n0][…/mmm/src/mmm][🌱 main][!]
-$ CCL_LOG_LEVEL=ERROR launch python3 -Wignore -m mmm.trainer.fsdp
+# $ CCL_LOG_LEVEL=ERROR launch python3 -Wignore -m mmm.trainer.fsdp
 Disabling local launch: multi-node application
 Connected to tcp://x4211c7s0b0n0.hostmgmt2211.cm.aurora.alcf.anl.gov:7919
 Found executable /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
