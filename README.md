@@ -1,4 +1,4 @@
-# 🐫 `mmm`: Multi-Model Models
+# 🐫 `mmm`: Multi-Model Modeling
 
 ## 🐣 Getting Started
 
