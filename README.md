@@ -4,24 +4,24 @@
 
 ### 🏡 Setup Environment
 
-We use [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
-for setting up, launching, and orchestrating our distributed training.
+- 🍋 We use [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
+  for setting up, launching, and orchestrating our distributed training.
 
-In particular, we can use the `ezpz_setup_env` helper function from
-[`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh):
+  In particular, we can use the `ezpz_setup_env` helper function from
+  [`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh):
 
-```bash
-source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
-ezpz_setup_env
-```
+  ```bash
+  source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
+  ezpz_setup_env
+  ```
 
-🪄 This will, _automagically_:
+- 🪄 This will, _automagically_:
 
-- Setup + activate python environment
-- Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
-- Define a `launch` alias to launch our application across them
+  - Setup + activate python environment
+  - Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
+  - Define a `launch` alias to launch our application across them
 
-For additional information, see [`ezpz`](https://github.com/saforem2/ezpz).
+  For additional information, see [`ezpz`](https://github.com/saforem2/ezpz).
 
 **Note**: This is _technically_ optional, but highly recommended as it will allow you to automatically launch on any[^any] distributed setup with a compatible MPI.
 
