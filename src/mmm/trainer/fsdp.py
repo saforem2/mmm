@@ -4,7 +4,6 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import Optional
 
 import ezpz as ez
 import torch
@@ -111,19 +110,23 @@ def test(model, test_loader):
     }
 
 
-def prepare_data(outdir: Optional[str] = None) -> dict:
-    outdir = "./data" if outdir is None else outdir
+def prepare_data() -> dict:
+    # outdir = "./data" if outdir is None else outdir
+    from pathlib import Path
+    from mmm import PROJECT_ROOT
+    outdir = Path(PROJECT_ROOT).joinpath("data")
+    outdir.mkdir(exist_ok=True, parents=True)
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
 
     dataset1 = datasets.MNIST(
-        outdir,
+        outdir.as_posix(),
         train=True,
         download=True,
         transform=transform,
     )
-    torch.distributed.barrier()
+    torch.distributed.barrier()  # type:ignore
     dataset2 = datasets.MNIST(outdir, train=False, transform=transform)
 
     sampler1 = DistributedSampler(
