@@ -2,33 +2,95 @@
 
 ## 🐣 Getting Started
 
+### 🏡 Setup Environment
 
+We use [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
+for setting up, launching, and orchestrating our distributed training.
+
+In particular, we can use the `ezpz_setup_env` helper function from
+[`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh):
+
+```bash
+source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
+ezpz_setup_env
+```
+
+🪄 This will, _automagically_:
+
+- Setup + activate python environment
+- Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
+- Define a `launch` alias to launch our application across them
+
+For additional information, see [`ezpz`](https://github.com/saforem2/ezpz).
+
+**Note**: This is _technically_ optional, but highly recommended as it will allow you to automatically launch on any[^any] distributed setup with a compatible MPI.
+
+[^any]: This has been tested and confirmed to work on:
+
+    - Any job behind a {PBS, slurm} job scheduler
+    - All [ALCF](https://alcf.anl.gov) systems (Aurora, Polaris, Sunspot, Sophia, etc.)
+    - Frontier (AMD system) @ OLCF
+    - Perlmutter (NVIDIA system) @ NERSC
+    - Distributed CPUs via `mpirun`
+    - Distributed `mps` devices via `mpirun`
+    
+    Both PBS and Slurm job schedulers are supported and the specifics of the running job will be used to populate the corresponding `launch` command.
+
+### 📦 Install
+
+From local clone (**recommended**):
+
+```bash
+git clone https://github.com/saforem2/mmm
+python3 -m pip install -e mmm
+```
+
+<details><summary>From git:</summary>
+
+```bash
+python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
+```
+
+</details>
+
+<!--
+> [!TIP]
+> We use [`ezpz_setup_env`](https://github.com/saforem2/ezpz) to 🪄 _automagically_:
+> - Setup + activate python environment
+> - Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
+> - Define a `launch` alias to launch our application across them
+>
+> This is optional, but will allow you to _automatically_ launch on any[^any] distributed setup with MPI.
+> ```bash
+> source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
+> ezpz_setup_env
+> ```
+> 
+> [^any]: Both PBS and Slurm job schedulers are supported and the specifics of the running job will be used to populate the corresponding `launch` command.
+> 
+> - This will:
+>  - automatically setup python
+>  - create a `launch` alias for launching applications
+>  
+> For additional information, see: \[🍋 [saforem2/`ezpz`](https://github.com/saforem2/ezpz)\]
+-->
+
+<!--
 1. Clone repo:
-  1. 
-  ```bash
-  git clone https://github.com/saforem2/mmm
-  cd mmm
-  ```
 
-2. Setup env:
+   ```bash
+   git clone https://github.com/saforem2/mmm
+   cd mmm
+   ```
 
-  ```bash
-  export PBS_O_WORKDIR=$(pwd)
-  source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
-  ezpz_setup_env
-  ```
-  This will automatically setup python and create a `launch` alias for
-  launching applications.  
-  For additional information, see
-  🍋 [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
+1. Install `mmm`:
 
-3. Install `mmm`:
+   ```bash
+   python3 -m pip install -e . --require-virtualenv
+   ```
+-->
 
-  ```bash
-  python3 -m pip install -e . --require-virtualenv
-  ```
-
-### Example: ViT
+## 🖼️ Example: ViT
 
 We can now `launch` the example in
 [`src/mmm/trainer/vit.py`](/src/mmm/trainer/vit.py):
@@ -278,25 +340,11 @@ Application fbf7ec7d resources: utime=5417s stime=893s maxrss=4521792KB inblock=
 
 </details>
 
-### 📝 Example: FSDP
+## 📝 Example: FSDP
 
 ```bash
-git clone https://github.com/saforem2/mmm
-cd mmm
-
-export PBS_O_WORKDIR=$(pwd)
-source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
-ezpz_setup_env
-
-python3 -m pip install -e . --require-virtualenv
-
-# ---- [smoke-test] ------------------------------------
-#test ability to launch simple distributed training job:
-launch python3 -m ezpz.test_dist
-
-# ---- [FSDP Example] -----------------------------------
 launch python3 \
-  src/mmm/examples/fsdp/example.py \
+  src/mmm/trainer/fsdp.py \
   --lr 1e-4 \
   --epochs 20 \
   --batch-size 1024 \
