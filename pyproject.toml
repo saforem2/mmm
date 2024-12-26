@@ -1,8 +1,6 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-# requires = ["setuptools>=70.0.0", "wheel"]
-# build-backend = "setuptools.build_meta"
 
 [project]
 name = "mmm"
@@ -26,15 +24,12 @@ authors = [{ name = "Sam Foreman", email = "saforem2@gmail.com" }]
 dependencies = [
   "mpi4py",
   "torch",
-  # "joblib",
   "rich",
-  # "hydra-core",
-  # "wandb",
-  # "hydra-colorlog",
   "transformers",
   "datasets",
   "tiktoken",
   "timm",
+  "torchinfo",
   "wandb",
   "tqdm",
   "ambivalent @ git+https://github.com/saforem2/ambivalent",
