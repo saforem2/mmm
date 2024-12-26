@@ -43,32 +43,32 @@ launch python3 -m mmm.trainer.vit
 Disabling local launch: multi-node application
 Connected to tcp://x4712c2s1b0n0.hostmgmt2712.cm.aurora.alcf.anl.gov:7919
 Found executable /flare/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
-Launching application d67f5af4-4ef0-495e-a1b2-96836b545274
-[2024-12-26 13:03:03,538][INFO][ezpz.dist]: [device='xpu'][rank=21/23][local_rank=9/11][node=1/1]
-[2024-12-26 13:03:03,538][INFO][ezpz.dist]: [device='xpu'][rank=19/23][local_rank=7/11][node=1/1]
-[2024-12-26 13:03:03,539][INFO][ezpz.dist]: [device='xpu'][rank=22/23][local_rank=10/11][node=0/1]
-[2024-12-26 13:03:03,542][INFO][ezpz.dist]: [device='xpu'][rank=5/23][local_rank=5/11][node=1/1]
-[2024-12-26 13:03:03,543][INFO][ezpz.dist]: [device='xpu'][rank=6/23][local_rank=6/11][node=0/1]
-[2024-12-26 13:03:03,545][INFO][ezpz.dist]: [device='xpu'][rank=2/23][local_rank=2/11][node=0/1]
-[2024-12-26 13:03:03,546][INFO][ezpz.dist]: [device='xpu'][rank=4/23][local_rank=4/11][node=0/1]
-[2024-12-26 13:03:03,547][INFO][ezpz.dist]: [device='xpu'][rank=9/23][local_rank=9/11][node=1/1]
-[2024-12-26 13:03:03,547][INFO][ezpz.dist]: [device='xpu'][rank=14/23][local_rank=2/11][node=0/1]
-[2024-12-26 13:03:03,548][INFO][ezpz.dist]: [device='xpu'][rank=18/23][local_rank=6/11][node=0/1]
-[2024-12-26 13:03:03,548][INFO][ezpz.dist]: [device='xpu'][rank=13/23][local_rank=1/11][node=1/1]
-[2024-12-26 13:03:03,549][INFO][ezpz.dist]: [device='xpu'][rank=20/23][local_rank=8/11][node=0/1]
-[2024-12-26 13:03:03,551][INFO][ezpz.dist]: [device='xpu'][rank=11/23][local_rank=11/11][node=1/1]
-[2024-12-26 13:03:03,553][INFO][ezpz.dist]: [device='xpu'][rank=1/23][local_rank=1/11][node=1/1]
-[2024-12-26 13:03:03,553][INFO][ezpz.dist]: [device='xpu'][rank=8/23][local_rank=8/11][node=0/1]
-[2024-12-26 13:03:03,554][INFO][ezpz.dist]: [device='xpu'][rank=12/23][local_rank=0/11][node=0/1]
-[2024-12-26 13:03:03,555][INFO][ezpz.dist]: [device='xpu'][rank=3/23][local_rank=3/11][node=1/1]
-[2024-12-26 13:03:03,556][INFO][ezpz.dist]: [device='xpu'][rank=15/23][local_rank=3/11][node=1/1]
-[2024-12-26 13:03:03,602][INFO][ezpz.dist]: [device='xpu'][rank=7/23][local_rank=7/11][node=1/1]
-[2024-12-26 13:03:03,602][INFO][ezpz.dist]: [device='xpu'][rank=10/23][local_rank=10/11][node=0/1]
-[2024-12-26 13:03:03,603][INFO][ezpz.dist]: [device='xpu'][rank=17/23][local_rank=5/11][node=1/1]
-[2024-12-26 13:03:03,603][INFO][ezpz.dist]: [device='xpu'][rank=23/23][local_rank=11/11][node=1/1]
-[2024-12-26 13:03:03,604][INFO][ezpz.dist]: [device='xpu'][rank=16/23][local_rank=4/11][node=0/1]
-[2024-12-26 13:03:03,607][INFO][ezpz.dist]: 
+Launching application fbf7ec7d-2a79-4443-bda3-32ce2add2ea0
+[2024-12-26 12:58:35.056566][INFO][dist.py:348] - [device='xpu'][rank=17/23][local_rank=5/11][node=1/1]
+[2024-12-26 12:58:35.057975][INFO][dist.py:348] - [device='xpu'][rank=15/23][local_rank=3/11][node=1/1]
+[2024-12-26 12:58:35.063629][INFO][dist.py:348] - [device='xpu'][rank=4/23][local_rank=4/11][node=0/1]
+[2024-12-26 12:58:35.066485][INFO][dist.py:348] - [device='xpu'][rank=1/23][local_rank=1/11][node=1/1]
+[2024-12-26 12:58:35.069585][INFO][dist.py:348] - [device='xpu'][rank=12/23][local_rank=0/11][node=0/1]
+[2024-12-26 12:58:35.072192][INFO][dist.py:348] - [device='xpu'][rank=13/23][local_rank=1/11][node=1/1]
+[2024-12-26 12:58:35.074019][INFO][dist.py:348] - [device='xpu'][rank=14/23][local_rank=2/11][node=0/1]
+[2024-12-26 12:58:35.075079][INFO][dist.py:348] - [device='xpu'][rank=3/23][local_rank=3/11][node=1/1]
+[2024-12-26 12:58:35.074998][INFO][dist.py:348] - [device='xpu'][rank=16/23][local_rank=4/11][node=0/1]
+[2024-12-26 12:58:35.082450][INFO][dist.py:348] - [device='xpu'][rank=5/23][local_rank=5/11][node=1/1]
+[2024-12-26 12:58:35.086127][INFO][dist.py:348] - [device='xpu'][rank=2/23][local_rank=2/11][node=0/1]
+[2024-12-26 12:58:35.096759][INFO][dist.py:348] - [device='xpu'][rank=8/23][local_rank=8/11][node=0/1]
+[2024-12-26 12:58:35.141914][INFO][dist.py:348] - [device='xpu'][rank=9/23][local_rank=9/11][node=1/1]
+[2024-12-26 12:58:35.160933][INFO][dist.py:348] - [device='xpu'][rank=10/23][local_rank=10/11][node=0/1]
+[2024-12-26 12:58:35.165743][INFO][dist.py:348] - [device='xpu'][rank=11/23][local_rank=11/11][node=1/1]
+[2024-12-26 12:58:35.265369][INFO][dist.py:348] - [device='xpu'][rank=22/23][local_rank=10/11][node=0/1]
+[2024-12-26 12:58:35.270633][INFO][dist.py:348] - [device='xpu'][rank=20/23][local_rank=8/11][node=0/1]
+[2024-12-26 12:58:35.270760][INFO][dist.py:348] - [device='xpu'][rank=23/23][local_rank=11/11][node=1/1]
+[2024-12-26 12:58:35.334601][INFO][dist.py:348] - [device='xpu'][rank=6/23][local_rank=6/11][node=0/1]
+[2024-12-26 12:58:35.334370][INFO][dist.py:348] - [device='xpu'][rank=7/23][local_rank=7/11][node=1/1]
+[2024-12-26 12:58:35.335810][INFO][dist.py:348] - [device='xpu'][rank=21/23][local_rank=9/11][node=1/1]
+[2024-12-26 12:58:35.337893][INFO][dist.py:348] - [device='xpu'][rank=19/23][local_rank=7/11][node=1/1]
+[2024-12-26 12:58:35.344547][INFO][dist.py:348] - [device='xpu'][rank=18/23][local_rank=6/11][node=0/1]
 
+[2024-12-26 12:58:35.349227][INFO][dist.py:92] -
 [dist_info]:
   • DEVICE=xpu
   • DEVICE_ID=xpu:0
@@ -89,18 +89,18 @@ Launching application d67f5af4-4ef0-495e-a1b2-96836b545274
   • WORLD_SIZE_IN_USE=24
   • LAUNCH_CMD=mpiexec --verbose --envall -n 24 -ppn 12 --hostfile /var/spool/pbs/aux/1227576.aurora-pbs-0001.hostmgmt.cm.aurora.alcf.anl.gov --cpu-bind depth -d 16
 
-
-[2024-12-26 13:03:03,607][INFO][ezpz.dist]: Using oneccl_bindings from: /opt/aurora/24.180.1/frameworks/aurora_nre_models_frameworks-2024.2.1_u1/lib/python3.10/site-packages/oneccl_bindings_for_pytorch/__init__.py
-[2024-12-26 13:03:03,607][INFO][ezpz.dist]: Using ipex from: /opt/aurora/24.180.1/frameworks/aurora_nre_models_frameworks-2024.2.1_u1/lib/python3.10/site-packages/intel_extension_for_pytorch/__init__.py
-[2024-12-26 13:03:03,607][INFO][ezpz.dist]: [0/24] Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
-[2024-12-26 13:03:03,611][INFO][ezpz.dist]: [device='xpu'][rank=0/23][local_rank=0/11][node=0/1]
-[2024-12-26 13:03:03,611][WARNING][ezpz.dist]: Using [24 / 24] available "xpu" devices !!
-2024:12:26-13:03:03:(129002) |CCL_WARN| value of CCL_LOG_LEVEL changed to be error (default:warn)
-[2024-12-26 13:03:04,801][INFO][__main__]: Using native for SDPA backend
-[2024-12-26 13:03:04,801][INFO][__main__]: Using AttentionBlock Attention with args.compile=False
-[2024-12-26 13:03:04,801][INFO][__main__]: config=ViTConfig(img_size=224, batch_size=128, num_heads=16, head_dim=64, depth=24, patch_size=16)
-[2024-12-26 13:03:04,801][INFO][__main__]: len(train_set)=1000000
-[2024-12-26 13:03:33,857][INFO][__main__]: 
+[2024-12-26 12:58:35.354055][INFO][dist.py:725] - Using oneccl_bindings from: /opt/aurora/24.180.1/frameworks/aurora_nre_models_frameworks-2024.2.1_u1/lib/python3.10/site-packages/oneccl_bindings_for_pytorch/__init__.py
+[2024-12-26 12:58:35.354482][INFO][dist.py:727] - Using ipex from: /opt/aurora/24.180.1/frameworks/aurora_nre_models_frameworks-2024.2.1_u1/lib/python3.10/site-packages/intel_extension_for_pytorch/__init__.py
+[2024-12-26 12:58:35.354850][INFO][dist.py:728] - [0/24] Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
+[2024-12-26 12:58:35.359349][INFO][dist.py:348] - [device='xpu'][rank=0/23][local_rank=0/11][node=0/1]
+[2024-12-26 12:58:35.359893][WARNING][_logger.py:68] - Using [24 / 24] available "xpu" devices !!
+2024:12:26-12:58:35:(124163) |CCL_WARN| value of CCL_PROCESS_LAUNCHER changed to be pmix (default:hydra)
+2024:12:26-12:58:35:(124163) |CCL_WARN| MPI was initialized externally, CCL-MPI specific environment is ignored
+[2024-12-26 12:58:36.145325][INFO][vit.py:243] - Using native for SDPA backend
+[2024-12-26 12:58:36.145798][INFO][vit.py:269] - Using AttentionBlock Attention with args.compile=False
+[2024-12-26 12:58:36.146212][INFO][vit.py:85] - config=ViTConfig(img_size=224, batch_size=128, num_heads=16, head_dim=64, depth=24, patch_size=16)
+[2024-12-26 12:58:36.146755][INFO][vit.py:87] - len(train_set)=1000000
+[2024-12-26 12:59:05.251449][INFO][vit.py:115] -
 ==========================================================================================
 Layer (type:depth-idx)                   Output Shape              Param #
 ==========================================================================================
@@ -125,178 +125,158 @@ Forward/backward pass size (MB): 54465.11
 Params size (MB): 1216.20
 Estimated Total Size (MB): 55758.38
 ==========================================================================================
-[2024-12-26 13:03:34,045][INFO][__main__]: Training with 24 x xpu (s), using torch_dtype=torch.bfloat16
-[2024-12-26 13:03:48,429][INFO][__main__]: iter=0 loss=7.102205 dt=14.290959 dtf=13.501260 dtb=0.772920
-[2024-12-26 13:03:49,467][INFO][__main__]: iter=1 loss=7.464774 dt=0.912323 dtf=0.295670 dtb=0.607295
-[2024-12-26 13:03:50,489][INFO][__main__]: iter=2 loss=7.242321 dt=0.899001 dtf=0.290576 dtb=0.599036
-[2024-12-26 13:03:51,512][INFO][__main__]: iter=3 loss=6.974370 dt=0.900507 dtf=0.289955 dtb=0.601244
-[2024-12-26 13:03:52,533][INFO][__main__]: iter=4 loss=7.320842 dt=0.897502 dtf=0.289744 dtb=0.598354
-[2024-12-26 13:03:53,556][INFO][__main__]: iter=5 loss=7.471265 dt=0.897839 dtf=0.287929 dtb=0.600329
-[2024-12-26 13:03:54,574][INFO][__main__]: iter=6 loss=7.666187 dt=0.893821 dtf=0.287799 dtb=0.596269
-[2024-12-26 13:03:55,600][INFO][__main__]: iter=7 loss=8.376398 dt=0.899029 dtf=0.286100 dtb=0.603470
-[2024-12-26 13:03:56,618][INFO][__main__]: iter=8 loss=10.248241 dt=0.891929 dtf=0.287084 dtb=0.595473
-[2024-12-26 13:03:57,635][INFO][__main__]: iter=9 loss=9.002174 dt=0.892073 dtf=0.288276 dtb=0.594184
-[2024-12-26 13:03:58,650][INFO][__main__]: iter=10 loss=7.627015 dt=0.889942 dtf=0.287662 dtb=0.592798
-[2024-12-26 13:03:59,908][INFO][ezpz.history]: Saving train_iter plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot
-[2024-12-26 13:03:59,908][INFO][ezpz.history]: Saving train_iter plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/pngs/train_iter.png
-[2024-12-26 13:04:00,051][INFO][ezpz.history]: Saving train_iter plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/svgs/train_iter.svg
-[2024-12-26 13:04:00,122][INFO][ezpz.history]: Saving train_loss plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot
-[2024-12-26 13:04:00,122][INFO][ezpz.history]: Saving train_loss plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/pngs/train_loss.png
-[2024-12-26 13:04:00,262][INFO][ezpz.history]: Saving train_loss plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/svgs/train_loss.svg
-[2024-12-26 13:04:00,329][INFO][ezpz.history]: Saving train_dt plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot
-[2024-12-26 13:04:00,329][INFO][ezpz.history]: Saving train_dt plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/pngs/train_dt.png
-[2024-12-26 13:04:00,465][INFO][ezpz.history]: Saving train_dt plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/svgs/train_dt.svg
-[2024-12-26 13:04:00,723][INFO][ezpz.history]: Saving train_dtf plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot
-[2024-12-26 13:04:00,723][INFO][ezpz.history]: Saving train_dtf plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/pngs/train_dtf.png
-[2024-12-26 13:04:00,864][INFO][ezpz.history]: Saving train_dtf plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/svgs/train_dtf.svg
-[2024-12-26 13:04:00,932][INFO][ezpz.history]: Saving train_dtb plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot
-[2024-12-26 13:04:00,933][INFO][ezpz.history]: Saving train_dtb plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/pngs/train_dtb.png
-[2024-12-26 13:04:01,069][INFO][ezpz.history]: Saving train_dtb plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/mplot/svgs/train_dtb.svg
-[2024-12-26 13:04:01,166][INFO][ezpz.plot]: Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_iter.txt
-[2024-12-26 13:04:01,172][INFO][ezpz.plot]: Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_loss.txt
-[2024-12-26 13:04:01,178][INFO][ezpz.plot]: Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dt.txt
-Failed to download font: IBM Plex Sans, skipping!
-Failed to download font: IBM Plex Sans Condensed, skipping!
-Failed to download font: IBM Plex Serif, skipping!
-                        train_iter [2024-12-26-130401]                     ␛[0m
-    ┌─────────────────────────────────────────────────────────────────────┐␛[0m
-10.0┤                                                                  ▗▄▞│␛[0m
-    │                                                             ▗▄▄▀▀▘  │␛[0m
-    │                                                          ▗▄▀▘       │␛[0m
- 8.3┤                                                       ▄▄▀▘          │␛[0m
-    │                                                  ▗▄▄▀▀              │␛[0m
-    │                                              ▗▄▀▀▘                  │␛[0m
- 6.7┤                                           ▄▞▀▘                      │␛[0m
-    │                                       ▄▄▀▀                          │␛[0m
- 5.0┤                                  ▗▄▄▀▀                              │␛[0m
-    │                               ▄▄▀▘                                  │␛[0m
-    │                           ▗▄▞▀                                      │␛[0m
- 3.3┤                       ▄▄▞▀▘                                         │␛[0m
-    │                   ▄▞▀▀                                              │␛[0m
-    │               ▗▄▀▀                                                  │␛[0m
- 1.7┤           ▗▄▞▀▘                                                     │␛[0m
-    │       ▄▄▞▀▘                                                         │␛[0m
-    │   ▗▄▞▀                                                              │␛[0m
- 0.0┤▄▄▀▘                                                                 │␛[0m
-    └┬──────┬──────┬─────┬──────┬──────┬──────┬──────┬─────┬──────┬───────┘␛[0m
-     1      2      3     4      5      6      7      8     9     10        ␛[0m
-train_iter                        train/iter                               ␛[0m
-␛[1m␛[38;5;10mtext saved in␛[0m␛[0m ␛[2m/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_iter.txt␛[0m
-                         train_loss [2024-12-26-130401]                    ␛[0m
-     ┌────────────────────────────────────────────────────────────────────┐␛[0m
-10.25┤                                                     ▗▚             │␛[0m
-     │                                                     ▌ ▚            │␛[0m
-     │                                                    ▞   ▚           │␛[0m
- 9.70┤                                                   ▗▘    ▚          │␛[0m
-     │                                                   ▌      ▚         │␛[0m
-     │                                                  ▞        ▚        │␛[0m
- 9.16┤                                                 ▗▘         ▚▖      │␛[0m
-     │                                                 ▌           ▚      │␛[0m
- 8.61┤                                                ▞             ▚     │␛[0m
-     │                                               ▗▘              ▚    │␛[0m
-     │                                               ▞                ▌   │␛[0m
- 8.07┤                                             ▄▀                 ▝▖  │␛[0m
-     │                                           ▗▀  [2024-12-26 13:04:01,184][INFO][ezpz.plot]: Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtf.txt
-                  ▝▖ │␛[0m
-     │                                         ▗▞▘                      ▝▖│␛[0m
- 7.52┤                                     ▗▄▄▞▘                         ▝│␛[0m
-     │     ▗▄▚▄▄▖                ▄▄▄▄▄▄▄▀▀▀▘                              │␛[0m
-     │  ▄▞▀▘    ▝▀▀▀▄▄        ▄▞▀                                         │␛[0m
- 6.97┤▀▀              ▀▀▚▄▄▄▞▀                                            │␛[0m
-     └┬──────┬─────┬──────┬──────┬──────┬─────┬──────┬──────┬─────┬───────┘␛[0m
-      1      2     3      4      5      6     7      8      9    10        ␛[0m
-train_loss                         train/iter                              ␛[0m
-␛[1m␛[38;5;10mtext saved in␛[0m␛[0m ␛[2m/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_loss.txt␛[0m
-                         train_dt [2024-12-26-130401]                      ␛[0m
-    ┌─────────────────────────────────────────────────────────────────────┐␛[0m
-14.3┤▌                                                                    │␛[0m
-    │▚                                                                    │␛[0m
-    │▝▖                                                                   │␛[0m
-12.1┤ ▌                                                                   │␛[0m
-    │ ▐                                                                   │␛[0m
-    │  ▌                                                                  │␛[0m
- 9.8┤  ▚                                                                  │␛[0m
-    │  ▝▖                                                                 │␛[0m
- 7.6┤   ▌                                                                 │␛[0m
-    │   ▐                                                                 │␛[0m
-    │    ▌                                                                │␛[0m
- 5.4┤    ▚                                                                │␛[0m
-    │    ▝▖                                                               │␛[0m
-    │     ▌                                                               │␛[0m
- 3.1┤     ▐                                                               │␛[0m
-    │      ▌                                                              │␛[0m
-    │      ▚                                                              │␛[0m
- 0.9┤      ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│␛[0m
-    └┬──────┬──────┬─────┬──────┬──────┬──────┬──────┬─────┬──────┬───────┘␛[0m
-     1      2      3     4      5      6      7      8     9     10        ␛[0m
-train_dt                          train/iter                               ␛[0m
-␛[1m␛[38;5;10mtext saved in␛[0m␛[0m ␛[2m/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dt.txt␛[0m
-[2024-12-26 13:04:01,189][INFO][ezpz.plot]: Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtb.txt
-[2024-12-26 13:04:01,196][INFO][__main__]: dataset=<xarray.Dataset> Size: 528B
+[2024-12-26 12:59:05.449000][INFO][vit.py:170] - Training with 24 x xpu (s), using torch_dtype=torch.bfloat16
+[2024-12-26 12:59:19.651525][INFO][vit.py:197] - iter=0 loss=7.102205 dt=14.105401 dtf=13.301080 dtb=0.787732
+[2024-12-26 12:59:20.693789][INFO][vit.py:197] - iter=1 loss=7.464778 dt=0.917288 dtf=0.303060 dtb=0.605716
+[2024-12-26 12:59:21.724462][INFO][vit.py:197] - iter=2 loss=7.242332 dt=0.905948 dtf=0.291535 dtb=0.605900
+[2024-12-26 12:59:22.756742][INFO][vit.py:197] - iter=3 loss=6.974534 dt=0.910001 dtf=0.296447 dtb=0.605194
+[2024-12-26 12:59:23.781231][INFO][vit.py:197] - iter=4 loss=7.322947 dt=0.896517 dtf=0.289726 dtb=0.598474
+[2024-12-26 12:59:24.804153][INFO][vit.py:197] - iter=5 loss=7.471062 dt=0.900163 dtf=0.295749 dtb=0.596026
+[2024-12-26 12:59:25.836680][INFO][vit.py:197] - iter=6 loss=7.666119 dt=0.908761 dtf=0.293596 dtb=0.606492
+[2024-12-26 12:59:26.855877][INFO][vit.py:197] - iter=7 loss=8.378406 dt=0.895732 dtf=0.293892 dtb=0.593241
+[2024-12-26 12:59:27.877752][INFO][vit.py:197] - iter=8 loss=10.235675 dt=0.897727 dtf=0.293244 dtb=0.595893
+[2024-12-26 12:59:28.899810][INFO][vit.py:197] - iter=9 loss=8.988402 dt=0.898550 dtf=0.293711 dtb=0.596322
+[2024-12-26 12:59:29.919233][INFO][vit.py:197] - iter=10 loss=7.622493 dt=0.894075 dtf=0.291858 dtb=0.593592
+                        train_iter [2024-12-26-125932]
+    ┌─────────────────────────────────────────────────────────────────────┐
+10.0┤                                                                  ▗▄▞│
+    │                                                             ▗▄▄▀▀▘  │
+    │                                                          ▗▄▀▘       │
+ 8.3┤                                                       ▄▄▀▘          │
+    │                                                  ▗▄▄▀▀              │
+    │                                              ▗▄▀▀▘                  │
+ 6.7┤                                           ▄▞▀▘                      │
+    │                                       ▄▄▀▀                          │
+ 5.0┤                                  ▗▄▄▀▀                              │
+    │                               ▄▄▀▘                                  │
+    │                           ▗▄▞▀                                      │
+ 3.3┤                       ▄▄▞▀▘                                         │
+    │                   ▄▞▀▀                                              │
+    │               ▗▄▀▀                                                  │
+ 1.7┤           ▗▄▞▀▘                                                     │
+    │       ▄▄▞▀▘                                                         │
+    │   ▗▄▞▀                                                              │
+ 0.0┤▄▄▀▘                                                                 │
+    └┬──────┬──────┬─────┬──────┬──────┬──────┬──────┬─────┬──────┬───────┘
+     1      2      3     4      5      6      7      8     9     10
+train_iter                        train/iter
+[2024-12-26 12:59:32.352154][INFO][plot.py:220] - Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_iter.txt
+text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_iter.txt
+                         train_loss [2024-12-26-125932]
+     ┌────────────────────────────────────────────────────────────────────┐
+10.24┤                                                     ▗▚             │
+     │                                                     ▌ ▚            │
+     │                                                    ▞   ▚           │
+ 9.69┤                                                   ▗▘    ▚          │
+     │                                                   ▌      ▚         │
+     │                                                  ▞        ▚        │
+ 9.15┤                                                 ▗▘         ▚▖      │
+     │                                                 ▌           ▚      │
+ 8.61┤                                                ▞             ▚     │
+     │                                               ▗▘              ▚    │
+     │                                               ▞                ▌   │
+ 8.06┤                                             ▄▀                 ▝▖  │
+     │                                           ▗▀                    ▝▖ │
+     │                                         ▗▞▘                      ▝▖│
+ 7.52┤                                     ▗▄▄▞▘                         ▝│
+     │     ▗▄▚▄▄▖                ▄▄▄▄▄▄▄▀▀▀▘                              │
+     │  ▄▞▀▘    ▝▀▀▀▄▄        ▄▞▀                                         │
+ 6.97┤▀▀              ▀▀▚▄▄▄▞▀                                            │
+     └┬──────┬─────┬──────┬──────┬──────┬─────┬──────┬──────┬─────┬───────┘
+      1      2     3      4      5      6     7      8      9    10
+train_loss                         train/iter
+[2024-12-26 12:59:32.357394][INFO][plot.py:220] - Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_loss.txt
+text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_loss.txt
+                         train_dt [2024-12-26-125932]
+    ┌─────────────────────────────────────────────────────────────────────┐
+14.1┤▌                                                                    │
+    │▚                                                                    │
+    │▝▖                                                                   │
+11.9┤ ▌                                                                   │
+    │ ▐                                                                   │
+    │  ▌                                                                  │
+ 9.7┤  ▚                                                                  │
+    │  ▝▖                                                                 │
+ 7.5┤   ▌                                                                 │
+    │   ▐                                                                 │
+    │    ▌                                                                │
+ 5.3┤    ▚                                                                │
+    │    ▝▖                                                               │
+    │     ▌                                                               │
+ 3.1┤     ▐                                                               │
+    │      ▌                                                              │
+    │      ▚                                                              │
+ 0.9┤      ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
+    └┬──────┬──────┬─────┬──────┬──────┬──────┬──────┬─────┬──────┬───────┘
+     1      2      3     4      5      6      7      8     9     10
+train_dt                          train/iter
+[2024-12-26 12:59:32.363355][INFO][plot.py:220] - Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dt.txt
+text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dt.txt
+                         train_dtf [2024-12-26-125932]
+    ┌─────────────────────────────────────────────────────────────────────┐
+13.3┤▌                                                                    │
+    │▚                                                                    │
+    │▝▖                                                                   │
+11.1┤ ▌                                                                   │
+    │ ▐                                                                   │
+    │  ▌                                                                  │
+ 9.0┤  ▚                                                                  │
+    │  ▝▖                                                                 │
+ 6.8┤   ▌                                                                 │
+    │   ▐                                                                 │
+    │    ▌                                                                │
+ 4.6┤    ▚                                                                │
+    │    ▝▖                                                               │
+    │     ▌                                                               │
+ 2.5┤     ▐                                                               │
+    │      ▌                                                              │
+    │      ▚                                                              │
+ 0.3┤      ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
+    └┬──────┬──────┬─────┬──────┬──────┬──────┬──────┬─────┬──────┬───────┘
+     1      2      3     4      5      6      7      8     9     10
+train_dtf                         train/iter
+[2024-12-26 12:59:32.369629][INFO][plot.py:220] - Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtf.txt
+text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtf.txt
+                          train_dtb [2024-12-26-125932]
+     ┌────────────────────────────────────────────────────────────────────┐
+0.788┤▌                                                                   │
+     │▚                                                                   │
+     │▝▖                                                                  │
+0.755┤ ▌                                                                  │
+     │ ▐                                                                  │
+     │  ▌                                                                 │
+0.723┤  ▐                                                                 │
+     │  ▝▖                                                                │
+0.690┤   ▚                                                                │
+     │   ▝▖                                                               │
+     │    ▌                                                               │
+0.658┤    ▐                                                               │
+     │     ▌                                                              │
+     │     ▐                                                              │
+0.626┤     ▝▖                                                             │
+     │      ▚                                                             │
+     │      ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄                   ▗                           │
+0.593┤                     ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▘▀▀▀▚▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▚▄▄▄▄▄▄│
+     └┬──────┬─────┬──────┬──────┬──────┬─────┬──────┬──────┬─────┬───────┘
+      1      2     3      4      5      6     7      8      9    10
+train_dtb                          train/iter
+[2024-12-26 12:59:32.375669][INFO][plot.py:220] - Appending plot to: /flare/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtb.txt
+text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtb.txt
+[2024-12-26 12:59:32.382346][INFO][vit.py:217] - dataset=<xarray.Dataset> Size: 528B
 Dimensions:     (draw: 11)
 Coordinates:
   * draw        (draw) int64 88B 0 1 2 3 4 5 6 7 8 9 10
 Data variables:
     train_iter  (draw) int64 88B 0 1 2 3 4 5 6 7 8 9 10
-    train_loss  (draw) float64 88B 7.102 7.465 7.242 6.974 ... 10.25 9.002 7.627
-    train_dt    (draw) float64 88B 14.29 0.9123 0.899 ... 0.8919 0.8921 0.8899
-    train_dtf   (draw) float64 88B 13.5 0.2957 0.2906 ... 0.2871 0.2883 0.2877
-    train_dtb   (draw) float64 88B 0.7729 0.6073 0.599 ... 0.5955 0.5942 0.5928
-[2024-12-26 13:04:01,197][INFO][__main__]: Took 56.40 seconds
-                         train_dtf [2024-12-26-130401]                     ␛[0m
-    ┌─────────────────────────────────────────────────────────────────────┐␛[0m
-13.5┤▌                                                                    │␛[0m
-    │▚                                                                    │␛[0m
-    │▝▖                                                                   │␛[0m
-11.3┤ ▌                                                                   │␛[0m
-    │ ▐                                                                   │␛[0m
-    │  ▌                                                                  │␛[0m
- 9.1┤  ▚                                                                  │␛[0m
-    │  ▝▖                                                                 │␛[0m
- 6.9┤   ▌                                                                 │␛[0m
-    │   ▐                                                                 │␛[0m
-    │    ▌                                                                │␛[0m
- 4.7┤    ▚                                                                │␛[0m
-    │    ▝▖                                                               │␛[0m
-    │     ▌                                                               │␛[0m
- 2.5┤     ▐                                                               │␛[0m
-    │      ▌                                                              │␛[0m
-    │      ▚                                                              │␛[0m
- 0.3┤      ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│␛[0m
-    └┬──────┬──────┬─────┬──────┬──────┬──────┬──────┬─────┬──────┬───────┘␛[0m
-     1      2      3     4      5      6      7      8     9     10        ␛[0m
-train_dtf                         train/iter                               ␛[0m
-␛[1m␛[38;5;10mtext saved in␛[0m␛[0m ␛[2m/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtf.txt␛[0m
-                          train_dtb [2024-12-26-130401]                    ␛[0m
-     ┌────────────────────────────────────────────────────────────────────┐␛[0m
-0.773┤▌                                                                   │␛[0m
-     │▚                                                                   │␛[0m
-     │▝▖                                                                  │␛[0m
-0.743┤ ▚                                                                  │␛[0m
-     │ ▐                                                                  │␛[0m
-     │  ▌                                                                 │␛[0m
-0.713┤  ▐                                                                 │␛[0m
-     │   ▌                                                                │␛[0m
-0.683┤   ▐                                                                │␛[0m
-     │   ▝▖                                                               │␛[0m
-     │    ▚                                                               │␛[0m
-0.653┤    ▝▖                                                              │␛[0m
-     │     ▌                                                              │␛[0m
-     │     ▐                                                              │␛[0m
-0.623┤      ▌                                                             │␛[0m
-     │      ▐                                                             │␛[0m
-     │       ▚▄▄▖         ▗                          ▗                    │␛[0m
-0.593┤          ▝▀▀▀▀▀▀▀▀▀▘▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▘▀▀▀▀▀▀▚▄▄▄▄▄▄▄▄▄▄▄▄▄│␛[0m
-     └┬──────┬─────┬──────┬──────┬──────┬─────┬──────┬──────┬─────┬───────┘␛[0m
-      1      2     3      4      5      6     7      8      9    10        ␛[0m
-train_dtb                          train/iter                              ␛[0m
-␛[1m␛[38;5;10mtext saved in␛[0m␛[0m ␛[2m/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/plots/vit/tplot/train_dtb.txt␛[0m
-Application d67f5af4 resources: utime=5400s stime=901s maxrss=4510072KB inblock=243770 oublock=752 minflt=18278180 majflt=11718 nvcsw=450176 nivcsw=154328
+    train_loss  (draw) float64 88B 7.102 7.465 7.242 6.975 ... 10.24 8.988 7.622
+    train_dt    (draw) float64 88B 14.11 0.9173 0.9059 ... 0.8977 0.8986 0.8941
+    train_dtf   (draw) float64 88B 13.3 0.3031 0.2915 ... 0.2932 0.2937 0.2919
+    train_dtb   (draw) float64 88B 0.7877 0.6057 0.6059 ... 0.5959 0.5963 0.5936
+[2024-12-26 12:59:32.384948][INFO][vit.py:276] - Took 56.24 seconds
+Application fbf7ec7d resources: utime=5417s stime=893s maxrss=4521792KB inblock=285066 oublock=712 minflt=18332211 majflt=13497 nvcsw=460770 nivcsw=471955
 ```
-  ```
 
 </details>
-
 
 ### 📝 Example: FSDP
 
