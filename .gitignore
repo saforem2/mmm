@@ -1,7 +1,7 @@
 # User Added
 wandb/
 venvs/
-data/
+MNIST/*
 deps/
 ignore/
 plots/
