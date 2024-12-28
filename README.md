@@ -11,7 +11,7 @@
   [`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh):
 
   ```bash
-  source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
+  source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
   ezpz_setup_env
   ```
 
@@ -52,43 +52,6 @@ python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
 ```
 
 </details>
-
-<!--
-> [!TIP]
-> We use [`ezpz_setup_env`](https://github.com/saforem2/ezpz) to 🪄 _automagically_:
-> - Setup + activate python environment
-> - Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
-> - Define a `launch` alias to launch our application across them
->
-> This is optional, but will allow you to _automatically_ launch on any[^any] distributed setup with MPI.
-> ```bash
-> source /dev/stdin <<< $(curl 'https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh')
-> ezpz_setup_env
-> ```
-> 
-> [^any]: Both PBS and Slurm job schedulers are supported and the specifics of the running job will be used to populate the corresponding `launch` command.
-> 
-> - This will:
->  - automatically setup python
->  - create a `launch` alias for launching applications
->  
-> For additional information, see: \[🍋 [saforem2/`ezpz`](https://github.com/saforem2/ezpz)\]
--->
-
-<!--
-1. Clone repo:
-
-   ```bash
-   git clone https://github.com/saforem2/mmm
-   cd mmm
-   ```
-
-1. Install `mmm`:
-
-   ```bash
-   python3 -m pip install -e . --require-virtualenv
-   ```
--->
 
 ## 🖼️ Example: ViT
 
