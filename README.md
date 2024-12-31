@@ -148,6 +148,10 @@ Application 30e8e012 resources: utime=648s stime=150s maxrss=2747408KB inblock=2
 took: 0h:00m:26s
 ```
 
+</details>
+
+</details>
+
 ## 🖼️ Example: ViT
 
 We can now `launch` the example in
