@@ -53,6 +53,101 @@ python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
 
 </details>
 
+## 🕸️ Example: TP + FSDP on Aurora
+
+We can use a combination of:
+
+1. Tensor Parallelism (TP)
+1. Fully Sharded Data Parallelism (FSDP)
+
+```bash
+$ CCL_LOG_LEVEL=ERROR launch python3 -Wignore -m mmm.examples.fsdp_tp --tpsize 2
+```
+
+<details closed><summary>Output:</summary>
+
+<details closed><summary>Aurora @ ALCF:</summary>
+
+```python
+Disabling local launch: multi-node application
+Connected to tcp://x4515c2s4b0n0.hostmgmt2515.cm.aurora.alcf.anl.gov:7919
+Found executable /flare/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
+Launching application 30e8e012-cbab-4003-9a22-4c4ac20dc088
+[2024-12-31 15:56:39.103362][INFO][__init__.py:146] - > initializing tensor parallel with size 2
+[2024-12-31 15:56:39.106619][INFO][__init__.py:151] - > initializing context parallel with size 1
+[2024-12-31 15:56:39.107182][INFO][__init__.py:156] - > initializing pipeline with size 1
+[2024-12-31 15:56:39.107680][INFO][__init__.py:159] - > initializing ddp with size 12
+2024:12:31-15:56:39:(25048) |CCL_WARN| value of CCL_LOG_LEVEL changed to be error (default:warn)
+[2024-12-31 15:56:40.271801][INFO][dist.py:824] - Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
+[2024-12-31 15:56:40.272560][INFO][dist.py:846] - [ 0/23]: [tp:0/1][dp: 0/11]
+[2024-12-31 15:56:40.271772][INFO][dist.py:846] - [ 6/23]: [tp:0/1][dp: 3/11]
+[2024-12-31 15:56:40.271773][INFO][dist.py:846] - [ 7/23]: [tp:1/1][dp: 3/11]
+[2024-12-31 15:56:40.271776][INFO][dist.py:846] - [ 8/23]: [tp:0/1][dp: 4/11]
+[2024-12-31 15:56:40.271801][INFO][dist.py:846] - [ 9/23]: [tp:1/1][dp: 4/11]
+[2024-12-31 15:56:40.271775][INFO][dist.py:846] - [10/23]: [tp:0/1][dp: 5/11]
+[2024-12-31 15:56:40.271775][INFO][dist.py:846] - [11/23]: [tp:1/1][dp: 5/11]
+[2024-12-31 15:56:40.271825][INFO][dist.py:846] - [ 1/23]: [tp:1/1][dp: 0/11]
+[2024-12-31 15:56:40.271806][INFO][dist.py:846] - [ 2/23]: [tp:0/1][dp: 1/11]
+[2024-12-31 15:56:40.271816][INFO][dist.py:846] - [ 3/23]: [tp:1/1][dp: 1/11]
+[2024-12-31 15:56:40.271805][INFO][dist.py:846] - [ 4/23]: [tp:0/1][dp: 2/11]
+[2024-12-31 15:56:40.271807][INFO][dist.py:846] - [ 5/23]: [tp:1/1][dp: 2/11]
+[2024-12-31 15:56:40.271706][INFO][dist.py:846] - [19/23]: [tp:1/1][dp: 9/11]
+[2024-12-31 15:56:40.271708][INFO][dist.py:846] - [20/23]: [tp:0/1][dp:10/11]
+[2024-12-31 15:56:40.271712][INFO][dist.py:846] - [21/23]: [tp:1/1][dp:10/11]
+[2024-12-31 15:56:40.271706][INFO][dist.py:846] - [22/23]: [tp:0/1][dp:11/11]
+[2024-12-31 15:56:40.271705][INFO][dist.py:846] - [23/23]: [tp:1/1][dp:11/11]
+[2024-12-31 15:56:40.271733][INFO][dist.py:846] - [12/23]: [tp:0/1][dp: 6/11]
+[2024-12-31 15:56:40.271731][INFO][dist.py:846] - [13/23]: [tp:1/1][dp: 6/11]
+[2024-12-31 15:56:40.271731][INFO][dist.py:846] - [14/23]: [tp:0/1][dp: 7/11]
+[2024-12-31 15:56:40.271735][INFO][dist.py:846] - [15/23]: [tp:1/1][dp: 7/11]
+[2024-12-31 15:56:40.271736][INFO][dist.py:846] - [16/23]: [tp:0/1][dp: 8/11]
+[2024-12-31 15:56:40.271763][INFO][dist.py:846] - [17/23]: [tp:1/1][dp: 8/11]
+[2024-12-31 15:56:40.271704][INFO][dist.py:846] - [18/23]: [tp:0/1][dp: 9/11]
+[2024-12-31 15:56:40.438371][INFO][fsdp_tp.py:151] - Device mesh created:
+device_mesh=DeviceMesh([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 13], [14, 15], [16, 17], [18, 19], [20, 21], [22, 23]], mesh_dim_names=('dp', 'tp'))
+[2024-12-31 15:56:40.825747][INFO][fsdp_tp.py:131] - Model after parallelization: sharded_model=FullyShardedDataParallel(
+  (_fsdp_wrapped_module): Transformer(
+    (tok_embeddings): Embedding(32000, 256)
+    (layers): ModuleList(
+      (0-1): 2 x TransformerBlock(
+        (attention): Attention(
+          (wq): Linear(in_features=256, out_features=256, bias=False)
+          (wk): Linear(in_features=256, out_features=256, bias=False)
+          (wv): Linear(in_features=256, out_features=256, bias=False)
+          (wo): Linear(in_features=256, out_features=256, bias=False)
+        )
+        (feed_forward): FeedForward(
+          (w1): Linear(in_features=256, out_features=768, bias=False)
+          (w2): Linear(in_features=768, out_features=256, bias=False)
+          (w3): Linear(in_features=256, out_features=768, bias=False)
+        )
+        (attention_norm): RMSNorm()
+        (ffn_norm): RMSNorm()
+      )
+    )
+    (norm): RMSNorm()
+    (output): Linear(in_features=256, out_features=32000, bias=False)
+  )
+)
+
+[2024-12-31 15:56:40.828674][INFO][fsdp_tp.py:132] - Creating AdamW optimizer with lr=0.003
+[2024-12-31 15:56:40.829325][INFO][fsdp_tp.py:161] -
+Starting 2D training...
+[2024-12-31 15:56:52.118143][INFO][fsdp_tp.py:180] - iter=0, loss=924.0859375
+[2024-12-31 15:56:52.174829][INFO][fsdp_tp.py:180] - iter=1, loss=-39734.98828125
+[2024-12-31 15:56:52.226686][INFO][fsdp_tp.py:180] - iter=2, loss=-208714.5
+[2024-12-31 15:56:52.276847][INFO][fsdp_tp.py:180] - iter=3, loss=-816428.9375
+[2024-12-31 15:56:52.327237][INFO][fsdp_tp.py:180] - iter=4, loss=-1490284.375
+[2024-12-31 15:56:52.377006][INFO][fsdp_tp.py:180] - iter=5, loss=-1950706.0
+[2024-12-31 15:56:52.425511][INFO][fsdp_tp.py:180] - iter=6, loss=-2355900.5
+[2024-12-31 15:56:52.475568][INFO][fsdp_tp.py:180] - iter=7, loss=-2753351.0
+[2024-12-31 15:56:52.525781][INFO][fsdp_tp.py:180] - iter=8, loss=-3167700.5
+[2024-12-31 15:56:52.575289][INFO][fsdp_tp.py:180] - iter=9, loss=-3609225.0
+[2024-12-31 15:56:52.575860][INFO][fsdp_tp.py:182] - Finished 2D training
+Application 30e8e012 resources: utime=648s stime=150s maxrss=2747408KB inblock=251200 oublock=1536 minflt=7129626 majflt=8632 nvcsw=198555 nivcsw=345273
+took: 0h:00m:26s
+```
+
 ## 🖼️ Example: ViT
 
 We can now `launch` the example in
