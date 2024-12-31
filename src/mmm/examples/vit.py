@@ -15,10 +15,11 @@ import torch
 import torch._dynamo
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
-from torch.utils.data import DataLoader
+# from torch.utils.data import DataLoader
 
 from mmm.configs import TORCH_DTYPES, TrainArgs, ViTConfig
-from mmm.data.fake import FakeImageDataset
+# from mmm.data.fake import FakeImageDataset, get_mnist
+from mmm.data.vision import get_fake_data, get_mnist
 from mmm.models.vit.attention import AttentionBlock
 
 # torch._dynamo.config.suppress_errors = True  # type:ignore
@@ -83,15 +84,21 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
         patch_size=args.patch_size,
     )
     logger.info(f'{config=}')
-    train_set = FakeImageDataset(config.img_size)
-    logger.info(f'{len(train_set)=}')
-    train_loader = DataLoader(
-        train_set,
-        batch_size=config.batch_size,
-        num_workers=args.num_workers,
-        pin_memory=True,
-        drop_last=True,
+    data = get_fake_data(
+        img_size=args.img_size,
+        batch_size=args.batch_size,
     )
+    # data = get
+
+    # train_set = FakeImageDataset(config.img_size)
+    # logger.info(f'{len(train_set)=}')
+    # train_loader = DataLoader(
+    #     train_set,
+    #     batch_size=config.batch_size,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    #     drop_last=True,
+    # )
 
     model = VisionTransformer(
         img_size=config.img_size,
@@ -170,7 +177,7 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
     logger.info(
         f'Training with {WORLD_SIZE} x {DEVICE_TYPE} (s), using {torch_dtype=}'
     )
-    for step, data in enumerate(train_loader):
+    for step, data in enumerate(data['train']['loader']):
         if args.max_iters is not None and step > int(args.max_iters):
             break
         t0 = time.perf_counter()
