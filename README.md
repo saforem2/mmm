@@ -69,43 +69,46 @@ $ CCL_LOG_LEVEL=ERROR launch python3 -Wignore -m mmm.examples.fsdp_tp --tpsize 2
 <details closed><summary>Aurora @ ALCF:</summary>
 
 ```python
+#[🐍 aurora_nre_models_frameworks-2024.2.1_u1](👻 aurora_nre_models_frameworks-2024.2.1_u1)
+#[09:28:36 AM][x4509c0s2b0n0][/f/A/f/p/s/mmm][🌱 main][$!?][⏱️ 31s]
+# $ launch python3 -Wignore -m mmm.examples.fsdp_tp --tp 2
 Disabling local launch: multi-node application
-Connected to tcp://x4515c2s4b0n0.hostmgmt2515.cm.aurora.alcf.anl.gov:7919
+Connected to tcp://x4509c0s2b0n0.hostmgmt2509.cm.aurora.alcf.anl.gov:7919
 Found executable /flare/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
-Launching application 30e8e012-cbab-4003-9a22-4c4ac20dc088
-[2024-12-31 15:56:39.103362][INFO][__init__.py:146] - > initializing tensor parallel with size 2
-[2024-12-31 15:56:39.106619][INFO][__init__.py:151] - > initializing context parallel with size 1
-[2024-12-31 15:56:39.107182][INFO][__init__.py:156] - > initializing pipeline with size 1
-[2024-12-31 15:56:39.107680][INFO][__init__.py:159] - > initializing ddp with size 12
-2024:12:31-15:56:39:(25048) |CCL_WARN| value of CCL_LOG_LEVEL changed to be error (default:warn)
-[2024-12-31 15:56:40.271801][INFO][dist.py:824] - Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
-[2024-12-31 15:56:40.272560][INFO][dist.py:846] - [ 0/23]: [tp:0/1][dp: 0/11]
-[2024-12-31 15:56:40.271772][INFO][dist.py:846] - [ 6/23]: [tp:0/1][dp: 3/11]
-[2024-12-31 15:56:40.271773][INFO][dist.py:846] - [ 7/23]: [tp:1/1][dp: 3/11]
-[2024-12-31 15:56:40.271776][INFO][dist.py:846] - [ 8/23]: [tp:0/1][dp: 4/11]
-[2024-12-31 15:56:40.271801][INFO][dist.py:846] - [ 9/23]: [tp:1/1][dp: 4/11]
-[2024-12-31 15:56:40.271775][INFO][dist.py:846] - [10/23]: [tp:0/1][dp: 5/11]
-[2024-12-31 15:56:40.271775][INFO][dist.py:846] - [11/23]: [tp:1/1][dp: 5/11]
-[2024-12-31 15:56:40.271825][INFO][dist.py:846] - [ 1/23]: [tp:1/1][dp: 0/11]
-[2024-12-31 15:56:40.271806][INFO][dist.py:846] - [ 2/23]: [tp:0/1][dp: 1/11]
-[2024-12-31 15:56:40.271816][INFO][dist.py:846] - [ 3/23]: [tp:1/1][dp: 1/11]
-[2024-12-31 15:56:40.271805][INFO][dist.py:846] - [ 4/23]: [tp:0/1][dp: 2/11]
-[2024-12-31 15:56:40.271807][INFO][dist.py:846] - [ 5/23]: [tp:1/1][dp: 2/11]
-[2024-12-31 15:56:40.271706][INFO][dist.py:846] - [19/23]: [tp:1/1][dp: 9/11]
-[2024-12-31 15:56:40.271708][INFO][dist.py:846] - [20/23]: [tp:0/1][dp:10/11]
-[2024-12-31 15:56:40.271712][INFO][dist.py:846] - [21/23]: [tp:1/1][dp:10/11]
-[2024-12-31 15:56:40.271706][INFO][dist.py:846] - [22/23]: [tp:0/1][dp:11/11]
-[2024-12-31 15:56:40.271705][INFO][dist.py:846] - [23/23]: [tp:1/1][dp:11/11]
-[2024-12-31 15:56:40.271733][INFO][dist.py:846] - [12/23]: [tp:0/1][dp: 6/11]
-[2024-12-31 15:56:40.271731][INFO][dist.py:846] - [13/23]: [tp:1/1][dp: 6/11]
-[2024-12-31 15:56:40.271731][INFO][dist.py:846] - [14/23]: [tp:0/1][dp: 7/11]
-[2024-12-31 15:56:40.271735][INFO][dist.py:846] - [15/23]: [tp:1/1][dp: 7/11]
-[2024-12-31 15:56:40.271736][INFO][dist.py:846] - [16/23]: [tp:0/1][dp: 8/11]
-[2024-12-31 15:56:40.271763][INFO][dist.py:846] - [17/23]: [tp:1/1][dp: 8/11]
-[2024-12-31 15:56:40.271704][INFO][dist.py:846] - [18/23]: [tp:0/1][dp: 9/11]
-[2024-12-31 15:56:40.438371][INFO][fsdp_tp.py:151] - Device mesh created:
+Launching application 913b7e1c-0fa0-4250-97e6-02949532b553
+[2025-01-02 09:28:57.952032][INFO][__init__.py:146] - > initializing tensor parallel with size 1
+[2025-01-02 09:28:57.954433][INFO][__init__.py:151] - > initializing context parallel with size 1
+[2025-01-02 09:28:57.954814][INFO][__init__.py:156] - > initializing pipeline with size 1
+[2025-01-02 09:28:57.955162][INFO][__init__.py:159] - > initializing ddp with size 24
+2025:01:02-09:28:57:(189718) |CCL_WARN| value of CCL_LOG_LEVEL changed to be error (default:warn)
+[2025-01-02 09:28:59.880705][INFO][dist.py:810] - Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
+[2025-01-02 09:28:59.881463][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 0/23]
+[2025-01-02 09:28:59.880739][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 7/23]
+[2025-01-02 09:28:59.880730][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 8/23]
+[2025-01-02 09:28:59.880756][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 9/23]
+[2025-01-02 09:28:59.880733][INFO][dist.py:848] - ['x4509c0s2b0n0'][10/23]
+[2025-01-02 09:28:59.880771][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 1/23]
+[2025-01-02 09:28:59.880741][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 2/23]
+[2025-01-02 09:28:59.880786][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 3/23]
+[2025-01-02 09:28:59.880766][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 4/23]
+[2025-01-02 09:28:59.880776][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 5/23]
+[2025-01-02 09:28:59.880755][INFO][dist.py:848] - ['x4509c0s2b0n0'][11/23]
+[2025-01-02 09:28:59.880821][INFO][dist.py:848] - ['x4509c0s2b0n0'][ 6/23]
+[2025-01-02 09:28:59.880733][INFO][dist.py:848] - ['x4206c0s0b0n0'][18/23]
+[2025-01-02 09:28:59.880729][INFO][dist.py:848] - ['x4206c0s0b0n0'][20/23]
+[2025-01-02 09:28:59.880733][INFO][dist.py:848] - ['x4206c0s0b0n0'][22/23]
+[2025-01-02 09:28:59.880757][INFO][dist.py:848] - ['x4206c0s0b0n0'][12/23]
+[2025-01-02 09:28:59.880763][INFO][dist.py:848] - ['x4206c0s0b0n0'][13/23]
+[2025-01-02 09:28:59.880753][INFO][dist.py:848] - ['x4206c0s0b0n0'][14/23]
+[2025-01-02 09:28:59.880774][INFO][dist.py:848] - ['x4206c0s0b0n0'][15/23]
+[2025-01-02 09:28:59.880759][INFO][dist.py:848] - ['x4206c0s0b0n0'][16/23]
+[2025-01-02 09:28:59.880761][INFO][dist.py:848] - ['x4206c0s0b0n0'][17/23]
+[2025-01-02 09:28:59.880767][INFO][dist.py:848] - ['x4206c0s0b0n0'][19/23]
+[2025-01-02 09:28:59.880751][INFO][dist.py:848] - ['x4206c0s0b0n0'][21/23]
+[2025-01-02 09:28:59.880740][INFO][dist.py:848] - ['x4206c0s0b0n0'][23/23]
+[2025-01-02 09:29:00.114768][INFO][fsdp_tp.py:146] - Device mesh created:
 device_mesh=DeviceMesh([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 13], [14, 15], [16, 17], [18, 19], [20, 21], [22, 23]], mesh_dim_names=('dp', 'tp'))
-[2024-12-31 15:56:40.825747][INFO][fsdp_tp.py:131] - Model after parallelization: sharded_model=FullyShardedDataParallel(
+[2025-01-02 09:29:00.511548][INFO][fsdp_tp.py:130] - Model after parallelization: sharded_model=FullyShardedDataParallel(
   (_fsdp_wrapped_module): Transformer(
     (tok_embeddings): Embedding(32000, 256)
     (layers): ModuleList(
@@ -130,22 +133,22 @@ device_mesh=DeviceMesh([[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 1
   )
 )
 
-[2024-12-31 15:56:40.828674][INFO][fsdp_tp.py:132] - Creating AdamW optimizer with lr=0.003
-[2024-12-31 15:56:40.829325][INFO][fsdp_tp.py:161] -
+[2025-01-02 09:29:00.514493][INFO][fsdp_tp.py:156] - Creating AdamW optimizer with lr=0.003
+[2025-01-02 09:29:00.515098][INFO][fsdp_tp.py:161] -
 Starting 2D training...
-[2024-12-31 15:56:52.118143][INFO][fsdp_tp.py:180] - iter=0, loss=924.0859375
-[2024-12-31 15:56:52.174829][INFO][fsdp_tp.py:180] - iter=1, loss=-39734.98828125
-[2024-12-31 15:56:52.226686][INFO][fsdp_tp.py:180] - iter=2, loss=-208714.5
-[2024-12-31 15:56:52.276847][INFO][fsdp_tp.py:180] - iter=3, loss=-816428.9375
-[2024-12-31 15:56:52.327237][INFO][fsdp_tp.py:180] - iter=4, loss=-1490284.375
-[2024-12-31 15:56:52.377006][INFO][fsdp_tp.py:180] - iter=5, loss=-1950706.0
-[2024-12-31 15:56:52.425511][INFO][fsdp_tp.py:180] - iter=6, loss=-2355900.5
-[2024-12-31 15:56:52.475568][INFO][fsdp_tp.py:180] - iter=7, loss=-2753351.0
-[2024-12-31 15:56:52.525781][INFO][fsdp_tp.py:180] - iter=8, loss=-3167700.5
-[2024-12-31 15:56:52.575289][INFO][fsdp_tp.py:180] - iter=9, loss=-3609225.0
-[2024-12-31 15:56:52.575860][INFO][fsdp_tp.py:182] - Finished 2D training
-Application 30e8e012 resources: utime=648s stime=150s maxrss=2747408KB inblock=251200 oublock=1536 minflt=7129626 majflt=8632 nvcsw=198555 nivcsw=345273
-took: 0h:00m:26s
+[2025-01-02 09:29:12.202504][INFO][fsdp_tp.py:180] - iter=0, loss=1826.242431640625
+[2025-01-02 09:29:12.253390][INFO][fsdp_tp.py:180] - iter=1, loss=-38597.9921875
+[2025-01-02 09:29:12.299441][INFO][fsdp_tp.py:180] - iter=2, loss=-291333.8125
+[2025-01-02 09:29:12.344723][INFO][fsdp_tp.py:180] - iter=3, loss=-805878.25
+[2025-01-02 09:29:12.390128][INFO][fsdp_tp.py:180] - iter=4, loss=-1569698.625
+[2025-01-02 09:29:12.435158][INFO][fsdp_tp.py:180] - iter=5, loss=-2033695.125
+[2025-01-02 09:29:12.479350][INFO][fsdp_tp.py:180] - iter=6, loss=-2449932.25
+[2025-01-02 09:29:12.523807][INFO][fsdp_tp.py:180] - iter=7, loss=-2867434.0
+[2025-01-02 09:29:12.568441][INFO][fsdp_tp.py:180] - iter=8, loss=-3293881.5
+[2025-01-02 09:29:12.613483][INFO][fsdp_tp.py:180] - iter=9, loss=-3740588.25
+[2025-01-02 09:29:12.614061][INFO][fsdp_tp.py:182] - Finished 2D training
+Application 913b7e1c resources: utime=647s stime=165s maxrss=2748168KB inblock=574560 oublock=192 minflt=7145078 majflt=17171 nvcsw=258069 nivcsw=778656
+took: 0h:00m:27s
 ```
 
 </details>
