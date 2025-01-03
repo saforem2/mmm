@@ -28,6 +28,7 @@ dependencies = [
   "transformers",
   "datasets",
   "tiktoken",
+  "torchinfo",
   "timm",
   "torchinfo",
   "wandb",
@@ -93,7 +94,7 @@ exclude = [
 ]
 
 # Same as Black.
-line-length = 80
+line-length = 79
 indent-width = 4
 
 # Assume Python 3.9
