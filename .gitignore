@@ -1,4 +1,12 @@
 # User Added
+*.bak
+outputs/*
+data/
+*.gz
+*-ubyte
+*.o[1-9]*
+*.e[1-9]*
+*old*
 wandb/
 venvs/
 MNIST/*
