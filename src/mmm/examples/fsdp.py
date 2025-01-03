@@ -1,11 +1,9 @@
 # Based on: https://github.com/pytorch/examples/blob/master/mnist/main.py
 import argparse
-import logging
 import os
-from pathlib import Path
 import time
 
-import ezpz as ez
+import ezpz
 import torch
 import torch.distributed as dist
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
@@ -14,25 +12,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
-from torch.utils.data.distributed import DistributedSampler
-
-from torchvision import datasets, transforms
 
 from mmm import PROJECT_ROOT
+from mmm.models import summarize_model
 
-logger = logging.getLogger(__name__)
 
-RANK = ez.setup_torch(
+logger = ezpz.get_logger(__name__)
+
+RANK = ezpz.setup_torch(
     backend=os.environ.get('BACKEND', 'DDP'),
 )
-WORLD_SIZE = ez.get_world_size()
-DEVICE = ez.get_torch_device()
-DEVICE_ID = f'{DEVICE}:{ez.get_local_rank()}'
+WORLD_SIZE = ezpz.get_world_size()
+DEVICE = ezpz.get_torch_device()
+DEVICE_ID = f'{DEVICE}:{ezpz.get_local_rank()}'
 
-logger.setLevel('INFO') if RANK == 0 else logger.setLevel('CRITICAL')
+# logger.setLevel('INFO') if RANK == 0 else logger.setLevel('CRITICAL')
 
 if torch.cuda.is_available():
-    torch.cuda.set_device(ez.get_local_rank())
+    torch.cuda.set_device(ezpz.get_local_rank())
 
 
 class Net(nn.Module):
@@ -113,58 +110,9 @@ def test(model, test_loader):
     }
 
 
-# def prepare_data() -> dict:
-#     # outdir = "./data" if outdir is None else outdir
-#     from pathlib import Path
-#     from mmm import PROJECT_ROOT
-#     outdir = Path(PROJECT_ROOT).joinpath("data")
-#     outdir.mkdir(exist_ok=True, parents=True)
-#     transform = transforms.Compose(
-#         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-#     )
-#
-#     dataset1 = datasets.MNIST(
-#         outdir.as_posix(),
-#         train=True,
-#         download=True,
-#         transform=transform,
-#     )
-#     torch.distributed.barrier()  # type:ignore
-#     dataset2 = datasets.MNIST(outdir, train=False, transform=transform)
-#
-#     sampler1 = DistributedSampler(
-#         dataset1, rank=RANK, num_replicas=WORLD_SIZE, shuffle=True
-#     )
-#     sampler2 = DistributedSampler(dataset2, rank=RANK, num_replicas=WORLD_SIZE)
-#
-#     train_kwargs = {"batch_size": args.batch_size, "sampler": sampler1}
-#     test_kwargs = {"batch_size": args.test_batch_size, "sampler": sampler2}
-#     cuda_kwargs = {"num_workers": 1, "pin_memory": True, "shuffle": False}
-#     train_kwargs.update(cuda_kwargs)
-#     test_kwargs.update(cuda_kwargs)
-#
-#     train_loader = torch.utils.data.DataLoader(  # type:ignore
-#         dataset1, **train_kwargs
-#     )
-#     test_loader = torch.utils.data.DataLoader(  # type:ignore
-#         dataset2, **test_kwargs
-#     )
-#     return {
-#         "train": {
-#             "data": dataset1,
-#             "loader": train_loader,
-#             "sampler": sampler1,
-#         },
-#         "test": {
-#             "data": dataset2,
-#             "loader": test_loader,
-#             "sampler": sampler2,
-#         },
-#     }
-
-
 def prepare_model_optimizer_and_scheduler(args: argparse.Namespace) -> dict:
     model = Net().to(DEVICE_ID)
+    logger.info(f'\n{summarize_model(model, verbose=False, depth=1)}')
     dtypes = {
         'fp16': torch.float16,
         'bf16': torch.bfloat16,
@@ -172,21 +120,18 @@ def prepare_model_optimizer_and_scheduler(args: argparse.Namespace) -> dict:
         'fp32': torch.float32,
     }
     dtype = dtypes[args.dtype]
-
-    if args.dtype in {'fp16', 'bf16', 'fp32'}:
-        model = FSDP(
-            model,
-            mixed_precision=MixedPrecision(
-                param_dtype=dtype,
-                cast_forward_inputs=True,
-            ),
-        )
-    else:
-        model = FSDP(model)
+    # if args.dtype in {'fp16', 'bf16', 'fp32'}:
+    model = FSDP(
+        model,
+        mixed_precision=MixedPrecision(
+            param_dtype=dtype,
+            cast_forward_inputs=True,
+        ),
+    )
+    # else:
+    #     model = FSDP(model)
     optimizer = optim.AdamW(model.parameters(), lr=args.lr)
-
     logger.info(f'{model=}')
-
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     return {
         'model': model,
@@ -200,7 +145,7 @@ def fsdp_main(args: argparse.Namespace) -> None:
     from mmm.data.vision import get_mnist
 
     data = get_mnist(
-        outdir=PROJECT_ROOT.joinpath('data', "MNIST"),
+        outdir=PROJECT_ROOT.joinpath('data', 'MNIST'),
         train_batch_size=args.batch_size,
         test_batch_size=args.test_batch_size,
         shuffle=False,
@@ -215,7 +160,7 @@ def fsdp_main(args: argparse.Namespace) -> None:
     optimizer = tmp['optimizer']
     scheduler = tmp['scheduler']
 
-    history = ez.History()
+    history = ezpz.History()
     start = time.perf_counter()
     for epoch in range(1, args.epochs + 1):
         train_metrics = train(
@@ -227,10 +172,7 @@ def fsdp_main(args: argparse.Namespace) -> None:
         )
         test_metrics = test(model, test_loader)
         scheduler.step()
-        metrics = {**train_metrics, **test_metrics}
-        _ = history.update(metrics)
-        summary = ez.summarize_dict(metrics)
-        logger.info(f'{summary}')
+        logger.info(history.update({**train_metrics, **test_metrics}))
 
     logger.info(
         ' '.join(
@@ -249,13 +191,7 @@ def fsdp_main(args: argparse.Namespace) -> None:
             torch.save(states, 'mnist_cnn.pt')
 
     if RANK == 0:
-        mplotdir = Path('plots')
-        tplotdir = mplotdir.joinpath('tplots')
-        tplotdir.mkdir(exist_ok=True, parents=True)
-        dataset = history.plot_all(outdir=mplotdir)
-        _ = history.tplot_all(
-            outdir=tplotdir, append=True, xkey='epoch', dataset=dataset
-        )
+        dataset = history.finalize(run_name='mmm-fsdp', dataset_fname='train')
         logger.info(f'{dataset=}')
 
 

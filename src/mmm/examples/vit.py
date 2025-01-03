@@ -4,7 +4,6 @@ mmm/trainer/vit.py
 
 import argparse
 import functools
-import logging
 import os
 import time
 from typing import Any, Optional, Sequence
@@ -15,27 +14,14 @@ import torch
 import torch._dynamo
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
-# from torch.utils.data import DataLoader
 
 from mmm.configs import TORCH_DTYPES, TrainArgs, ViTConfig
-# from mmm.data.fake import FakeImageDataset, get_mnist
-from mmm.data.vision import get_fake_data, get_mnist
+from mmm.models import summarize_model
+
+from mmm.data.vision import get_fake_data  # , get_mnist
 from mmm.models.vit.attention import AttentionBlock
 
-# torch._dynamo.config.suppress_errors = True  # type:ignore
-
-SEED = int(os.environ.get('SEED', '0'))
-RANK = ezpz.setup(backend='DDP', seed=SEED)
-WORLD_SIZE = ezpz.get_world_size()
-
-LOCAL_RANK = ezpz.get_local_rank()
-DEVICE_TYPE = str(ezpz.get_torch_device(as_torch_device=False))
-DEVICE = torch.device(f'{DEVICE_TYPE}:{LOCAL_RANK}')
-
-LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO') if RANK == 0 else 'CRITICAL'
-
-logger = logging.getLogger(__name__)
-logger.setLevel(LOG_LEVEL)
+logger = ezpz.get_logger(__name__)
 
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> TrainArgs:
@@ -75,6 +61,13 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> TrainArgs:
 
 
 def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
+    seed = int(os.environ.get('SEED', '0'))
+    rank = ezpz.setup(backend='DDP', seed=seed)
+    world_size = ezpz.get_world_size()
+
+    local_rank = ezpz.get_local_rank()
+    device_type = str(ezpz.get_torch_device(as_torch_device=False))
+    device = torch.device(f'{device_type}:{local_rank}')
     config = ViTConfig(
         img_size=args.img_size,
         batch_size=args.batch_size,
@@ -83,6 +76,7 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
         depth=args.depth,
         patch_size=args.patch_size,
     )
+
     logger.info(f'{config=}')
     data = get_fake_data(
         img_size=args.img_size,
@@ -110,54 +104,43 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
         global_pool='avg',
         block_fn=block_fn,
     )
-    try:
-        from torchinfo import summary
 
-        summary_str = summary(
-            model,
-            input_size=(config.batch_size, 3, config.img_size, config.img_size),
-            depth=1,
-            verbose=0,
-        )
-        logger.info(f'\n{summary_str}')
+    mstr = summarize_model(
+        model,
+        verbose=False,
+        depth=1,
+        input_size=(
+            config.batch_size,
+            3,
+            config.img_size,
+            config.img_size,
+        ),
+    )
+    logger.info(f'\n{mstr}')
+    model.to(device)
+    num_params = sum(
+        [
+            sum(
+                [
+                    getattr(p, 'ds_numel', 0)
+                    if hasattr(p, 'ds_id')
+                    else p.nelement()
+                    for p in model_module.parameters()
+                ]
+            )
+            for model_module in model.modules()
+        ]
+    )
+    model_size_in_billions = num_params / 1e9
+    logger.info(f'Model size: nparams={model_size_in_billions:.2f} B')
 
-    except (ImportError, ModuleNotFoundError):
-        logger.warning(
-            'torchinfo not installed, unable to print model summary!'
-        )
-    model.to(DEVICE)
-    # num_params = sum(
-    #     [
-    #         sum(
-    #             [
-    #                 getattr(p, 'ds_numel', 0)
-    #                 if hasattr(p, 'ds_id')
-    #                 else p.nelement()
-    #                 for p in model_module.parameters()
-    #             ]
-    #         )
-    #         for model_module in model.modules()
-    #     ]
-    # )
-    # model_size_in_billions = num_params / 1e9
-    # logger.info(f'Model size: nparams={model_size_in_billions:.2f} B')
-    # except Exception:
-    #     import pudb; pudb.set_trace()
-
-    # dtypes = {
-    #     "fp16": torch.float16,
-    #     "bf16": torch.bfloat16,
-    #     "bfloat16": torch.bfloat16,
-    #     "fp32": torch.float32,
-    # }
-    # dtype = dtypes[args.dtype]
-
-    if WORLD_SIZE > 1:
+    if world_size > 1:
         if args.dtype in {'fp16', 'bf16', 'fp32'}:
             model = FSDP(
                 model,
                 mixed_precision=MixedPrecision(
                     param_dtype=TORCH_DTYPES[args.dtype],
+                    reduce_dtype=torch.float32,
                     cast_forward_inputs=True,
                 ),
             )
@@ -175,16 +158,16 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
 
     history = ezpz.History()
     logger.info(
-        f'Training with {WORLD_SIZE} x {DEVICE_TYPE} (s), using {torch_dtype=}'
+        f'Training with {world_size} x {device_type} (s), using {torch_dtype=}'
     )
     for step, data in enumerate(data['train']['loader']):
         if args.max_iters is not None and step > int(args.max_iters):
             break
         t0 = time.perf_counter()
-        inputs = data[0].to(device=DEVICE, non_blocking=True)
-        label = data[1].to(device=DEVICE, non_blocking=True)
+        inputs = data[0].to(device=device, non_blocking=True)
+        label = data[1].to(device=device, non_blocking=True)
         t1 = time.perf_counter()
-        with torch.autocast(device_type=DEVICE_TYPE, dtype=torch_dtype):
+        with torch.autocast(device_type=device_type, dtype=torch_dtype):
             outputs = model(inputs)
             loss = criterion(outputs, label)
         t2 = time.perf_counter()
@@ -192,34 +175,21 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
         loss.backward()
         optimizer.step()
         t3 = time.perf_counter()
-        metrics = {
-            'train/iter': step,
-            'train/loss': loss.item(),
-            'train/dt': t3 - t0,
-            'train/dtf': t2 - t1,
-            'train/dtb': t3 - t2,
-        }
-        _ = history.update(metrics)
-        summary = ezpz.summarize_dict(metrics)
-        logger.info(summary.replace('train/', ''))
+        logger.info(
+            history.update(
+                {
+                    'train/iter': step,
+                    'train/loss': loss.item(),
+                    'train/dt': t3 - t0,
+                    'train/dtf': t2 - t1,
+                    'train/dtb': t3 - t2,
+                }
+            ).replace('train/', '')
+        )
 
-    if RANK == 0:
-        from mmm import OUTPUTS_DIR
-
-        outdir = OUTPUTS_DIR.joinpath('plots', 'vit')
-        tplotdir = outdir.joinpath('tplot')
-        mplotdir = outdir.joinpath('mplot')
-        tplotdir.mkdir(exist_ok=True, parents=True)
-        mplotdir.mkdir(exist_ok=True, parents=True)
-
-        import matplotlib.pyplot as plt
-        import ambivalent
-
-        plt.style.use(ambivalent.STYLES['ambivalent'])
-
-        dataset = history.plot_all(outdir=mplotdir)
-        _ = history.tplot_all(
-            outdir=tplotdir, append=True, xkey='train/iter', dataset=dataset
+    if rank == 0:
+        dataset = history.finalize(
+            run_name='mmm-vit', dataset_fname='train', verbose=False
         )
         logger.info(f'{dataset=}')
 
@@ -227,6 +197,8 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
 
 
 def main(argv: Optional[Sequence[str]] = None):
+    # torch._dynamo.config.suppress_errors = True  # type:ignore
+
     args: TrainArgs = parse_args(argv)
     config = ViTConfig(
         img_size=args.img_size,

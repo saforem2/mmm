@@ -57,7 +57,7 @@ from torch.distributed.fsdp import (
     MixedPrecision,
 )
 from torch.distributed._tensor import Shard, Replicate
-from torch.distributed.tensor.parallel import loss_parallel
+# from torch.distributed.tensor.parallel import loss_parallel
 
 from torch.distributed.tensor.parallel import (
     parallelize_module,
