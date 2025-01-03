@@ -6,30 +6,8 @@ Sam Foreman
 
 Modified from:
 <https://pytorch.org/tutorials/intermediate/TP_tutorial.html>
-"""
-import argparse
 
-import ezpz
 
-import torch
-
-import torch.nn as nn
-
-from mmm.models.llama import Transformer, ModelArgs
-
-from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from torch.distributed._tensor import Shard, Replicate
-
-from torch.distributed.tensor.parallel import (
-    parallelize_module,
-    ColwiseParallel,
-    RowwiseParallel,
-    PrepareModuleInput,
-    SequenceParallel,
-)
-
-"""
 This is the script to test 2D Parallel which combines Tensor/Sequence
 parallel with Fully Sharded Data Parallel (TP/SP + FSDP) on a example
 Llama2 model. We show an E2E working flow from forward, backward
@@ -53,30 +31,70 @@ separate parallel dimensions:
 └──────────┘       └──────────┘       └──────────┘       └──────────┘
 FSDP:
 [0, 8, ..., 8N-8], [1, 9, ..., 8N-7], ..., [7, 15, ..., 8N-1]
-
 """
 
+import argparse
+from time import perf_counter
+
+import ezpz
+
+import torch
+
+import torch.nn as nn
+import torch.nn.functional as F
+
+from mmm.models import summarize_model
+
+# from mmm.models.llama import Transformer, ModelArgs
+from mmm.models.llama import Transformer, ModelArgs
+from mmm.data.text import RandomTokenDataset
+
+
+from torch.utils.data import DataLoader
+from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
+from torch.distributed.fsdp import (
+    FullyShardedDataParallel as FSDP,
+    MixedPrecision,
+)
+from torch.distributed._tensor import Shard, Replicate
+from torch.distributed.tensor.parallel import loss_parallel
+
+from torch.distributed.tensor.parallel import (
+    parallelize_module,
+    ColwiseParallel,
+    RowwiseParallel,
+    PrepareModuleInput,
+    SequenceParallel,
+)
 
 logger = ezpz.get_logger(__name__)
 
 
 def parse_args():
-    args = argparse.ArgumentParser(description='2D Parallel Training')
-    # args: dim, n_layers, n_heads, vocab_size
-    args.add_argument('--dim', type=int, default=256)
-    args.add_argument('--n_layers', type=int, default=2)
-    args.add_argument('--n_heads', type=int, default=16)
-    args.add_argument('--vocab_size', type=int, default=32000)
-    args.add_argument('--lr', type=float, default=3e-3)
-    args.add_argument('--num_iterations', type=int, default=10)
-    args.add_argument('--batch_size', type=int, default=2)
-    args.add_argument('--tpsize', type=int, default=2)
-    return args.parse_args()
+    parser = argparse.ArgumentParser(description='2D Parallel Training')
+    parser.add_argument('--dim', type=int, default=256)
+    parser.add_argument('--n_layers', type=int, default=24)
+    parser.add_argument('--n_heads', type=int, default=32)
+    parser.add_argument('--n_kv_heads', type=int, default=8)
+    parser.add_argument('--multiple_of', type=int, default=360)
+    parser.add_argument('--ffn_dim_multiplier', type=float, default=None)
+    parser.add_argument('--norm_eps', type=float, default=1e-5)
+    parser.add_argument('--vocab_size', type=int, default=32_000)
+    parser.add_argument('--seq_length', type=int, default=128)
+    parser.add_argument('--lr', type=float, default=3e-3)
+    parser.add_argument('--num_iterations', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--tpsize', type=int, default=2)
+    # parser.add_argument('--max_batch_size', type=int, default=None)
+    parser.add_argument('--max_seq_len', type=int, default=32768)
+    parser.add_argument('--depth_init', type=bool, default=True)
+    # max_batch_size: int = 32
+    # max_seq_len: int = 32768
+    # depth_init: bool = True
+    return parser.parse_args()
 
 
-def parallelize(
-    model: nn.Module, device_mesh: DeviceMesh
-) -> nn.Module:
+def parallelize(model: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
     tp_mesh = device_mesh['tp']
     dp_mesh = device_mesh['dp']
 
@@ -126,13 +144,21 @@ def parallelize(
             device_mesh=tp_mesh,
             parallelize_plan=layer_tp_plan,
         )
-    sharded_model = FSDP(model, device_mesh=dp_mesh)
-    logger.info(f'Model after parallelization: {sharded_model=}\n')
+    sharded_model = FSDP(
+        model,
+        mixed_precision=MixedPrecision(
+            param_dtype=torch.bfloat16,
+            cast_forward_inputs=True,
+            reduce_dtype=torch.float32,
+        ),
+        device_mesh=dp_mesh,
+    )
+    logger.info(f'Model after parallelization:\n{sharded_model=}\n')
     return sharded_model
 
 
 def train(args: argparse.Namespace):
-    _ = ezpz.setup_torch('DDP')  # , tensor_parallel_size=args.tpsize)
+    _ = ezpz.setup_torch('DDP', tensor_parallel_size=args.tpsize)
     world_size = ezpz.get_world_size()
     assert (
         world_size % args.tpsize == 0
@@ -149,37 +175,72 @@ def train(args: argparse.Namespace):
         dim=args.dim,
         n_layers=args.n_layers,
         n_heads=args.n_heads,
+        n_kv_heads=args.n_kv_heads,
         vocab_size=args.vocab_size,
+        multiple_of=args.multiple_of,
     )
-    model = Transformer.from_model_args(config).to(ezpz.get_torch_device())
+    device_type = str(ezpz.get_torch_device(as_torch_device=False))
+    device_id = f'{device_type}:{ezpz.get_local_rank()}'
+    model = Transformer.from_model_args(config)
+    logger.info(
+        f'\n{summarize_model(model, verbose=False, depth=2)}'  #', input_size=inshape)}'
+    )
+    model.to(device_id)
     model = parallelize(model, device_mesh)
     logger.info(f'Creating AdamW optimizer with lr={args.lr}')
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=args.lr, foreach=True
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, foreach=True)
 
-    logger.info('\nStarting 2D training...')
     device = ezpz.get_torch_device(as_torch_device=False)
 
+    dataset = RandomTokenDataset(
+        vocab_size=args.vocab_size, seq_length=args.seq_length
+    )
+    dataloader = DataLoader(
+        dataset, batch_size=args.batch_size
+    )  # , num_workers=0)
+    logger.info('\nStarting 2D training...')
+    model.train()
+    history = ezpz.History()
+
+    # # model.init_weights()
+    # tdist.barrier()
     # For TP, input needs to be the same across all TP ranks.
     # while for SP, input can be different across all ranks
     # We will use dp_rank for setting the random seed
     # to mimic the behavior of the dataloader
-    for i in range(args.num_iterations):
-        torch.manual_seed(i + device_mesh['dp'].get_local_rank())
-        inp = torch.randint(
-            0,
-            config.vocab_size,
-            (args.batch_size, 10),
-        )
-        inp.to(device)
+    for idx, batch in enumerate(dataloader):
+        t0 = perf_counter()
+        batch = batch.to(device)
+        batch.to(torch.long)
+        inp = batch[:, :-1]
+        labels = batch[:, 1:]
+        if idx == 0:
+            logger.info(f'{inp.shape=}')
         output = model(inp)
-        loss = output.sum()
+        t1 = perf_counter()
+        loss = F.cross_entropy(
+            output.reshape(-1, output.size(-1)), labels.reshape(-1)
+        )
         loss.backward()
         optimizer.step()
-        logger.info(f'iter={i}, loss={loss.item()}')
-
+        t2 = perf_counter()
+        logger.info(
+            history.update(
+                {
+                    'iter': idx,
+                    'loss': loss.item(),
+                    'dt': t2 - t0,
+                    'dtf': t1 - t0,
+                    'dtb': t2 - t1,
+                }
+            )
+        )
     logger.info('Finished 2D training')
+    if ezpz.get_rank() == 0:
+        dataset = history.finalize(
+            run_name='mmm-fsdp-tp', dataset_fname='train', therm_frac=0.1
+        )
+        logger.info(f'{dataset=}')
 
 
 if __name__ == '__main__':
