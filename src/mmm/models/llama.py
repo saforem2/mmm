@@ -16,7 +16,9 @@ class ModelArgs:
     n_heads: int = 32
     n_kv_heads: Optional[int] = None
     vocab_size: int = -1  # defined later by tokenizer
-    multiple_of: int = 256  # make SwiGLU hidden layer size multiple of large power of 2
+    multiple_of: int = (
+        256  # make SwiGLU hidden layer size multiple of large power of 2
+    )
     ffn_dim_multiplier: Optional[float] = None
     norm_eps: float = 1e-5
 
@@ -43,7 +45,9 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     Returns:
         torch.Tensor: Precomputed frequency tensor with complex exponentials.
     """
-    freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
+    freqs = 1.0 / (
+        theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim)
+    )
     t = torch.arange(end, device=freqs.device)  # type: ignore
     freqs = torch.outer(t, freqs).float()  # type: ignore
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
@@ -67,7 +71,9 @@ def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
     ndim = x.ndim
     assert 0 <= 1 < ndim
     assert freqs_cis.shape == (x.shape[1], x.shape[-1])
-    shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
+    shape = [
+        d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)
+    ]
     return freqs_cis.view(*shape)
 
 
@@ -176,8 +182,12 @@ class Attention(nn.Module):
         self.wq = nn.Linear(
             model_args.dim, model_args.n_heads * self.head_dim, bias=False
         )
-        self.wk = nn.Linear(model_args.dim, self.n_kv_heads * self.head_dim, bias=False)
-        self.wv = nn.Linear(model_args.dim, self.n_kv_heads * self.head_dim, bias=False)
+        self.wk = nn.Linear(
+            model_args.dim, self.n_kv_heads * self.head_dim, bias=False
+        )
+        self.wv = nn.Linear(
+            model_args.dim, self.n_kv_heads * self.head_dim, bias=False
+        )
         self.wo = nn.Linear(
             model_args.n_heads * self.head_dim, model_args.dim, bias=False
         )
@@ -206,14 +216,23 @@ class Attention(nn.Module):
         bsz, seqlen, _ = x.shape
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
 
-        xq = xq.view(bsz, seqlen, self.n_heads, self.head_dim)
-        xk = xk.view(bsz, seqlen, self.n_kv_heads, self.head_dim)
-        xv = xv.view(bsz, seqlen, self.n_kv_heads, self.head_dim)
+        try:
+            xq = xq.view(bsz, seqlen, self.n_heads, self.head_dim)
+            xk = xk.view(bsz, seqlen, self.n_kv_heads, self.head_dim)
+            xv = xv.view(bsz, seqlen, self.n_kv_heads, self.head_dim)
+        except Exception:
+            from ezpz.utils import breakpoint
+
+            breakpoint(0)
 
         xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
-        keys = repeat_kv(xk, self.n_rep)  # (bs, seqlen, n_local_heads, head_dim)
-        values = repeat_kv(xv, self.n_rep)  # (bs, seqlen, n_local_heads, head_dim)
+        keys = repeat_kv(
+            xk, self.n_rep
+        )  # (bs, seqlen, n_local_heads, head_dim)
+        values = repeat_kv(
+            xv, self.n_rep
+        )  # (bs, seqlen, n_local_heads, head_dim)
 
         xq = xq.transpose(1, 2)  # (bs, n_local_heads, seqlen, head_dim)
         xk = keys.transpose(1, 2)  # (bs, n_local_heads, seqlen, head_dim)
@@ -257,7 +276,9 @@ class FeedForward(nn.Module):
         # custom dim factor multiplier
         if ffn_dim_multiplier is not None:
             hidden_dim = int(ffn_dim_multiplier * hidden_dim)
-        hidden_dim = multiple_of * ((hidden_dim + multiple_of - 1) // multiple_of)
+        hidden_dim = multiple_of * (
+            (hidden_dim + multiple_of - 1) // multiple_of
+        )
 
         self.w1 = nn.Linear(dim, hidden_dim, bias=False)
         self.w2 = nn.Linear(hidden_dim, dim, bias=False)
@@ -309,9 +330,7 @@ class TransformerBlock(nn.Module):
         self.attention_norm = RMSNorm(
             dim=model_args.dim, eps=model_args.norm_eps
         )
-        self.ffn_norm = RMSNorm(
-            dim=model_args.dim, eps=model_args.norm_eps
-        )
+        self.ffn_norm = RMSNorm(dim=model_args.dim, eps=model_args.norm_eps)
 
         if model_args.depth_init:
             self.weight_init_std = 0.02 / (2 * (self.layer_id + 1)) ** 0.5
@@ -371,9 +390,11 @@ class Transformer(nn.Module):
         self.n_layers = model_args.n_layers
         self.model_dim = model_args.dim
 
-        self.tok_embeddings = nn.Embedding(model_args.vocab_size, model_args.dim)
+        self.tok_embeddings = nn.Embedding(
+            model_args.vocab_size, model_args.dim
+        )
         self.register_buffer(
-            "freqs_cis",
+            'freqs_cis',
             precompute_freqs_cis(
                 model_args.dim // model_args.n_heads,
                 # Need to compute until at least the max token limit for generation
@@ -385,11 +406,11 @@ class Transformer(nn.Module):
         for layer_id in range(model_args.n_layers):
             self.layers.append(TransformerBlock(layer_id, model_args))
 
-        self.norm = RMSNorm(
-            dim=model_args.dim, eps=model_args.norm_eps
-        )
+        self.norm = RMSNorm(dim=model_args.dim, eps=model_args.norm_eps)
 
-        self.output = nn.Linear(model_args.dim, model_args.vocab_size, bias=False)
+        self.output = nn.Linear(
+            model_args.dim, model_args.vocab_size, bias=False
+        )
         self.init_weights()
 
     def init_weights(self):
@@ -448,7 +469,7 @@ class Transformer(nn.Module):
         return output
 
     @classmethod
-    def from_model_args(cls, model_args: ModelArgs) -> "Transformer":
+    def from_model_args(cls, model_args: ModelArgs) -> 'Transformer':
         """
         Initialize a Transformer model from a ModelArgs object.
 
