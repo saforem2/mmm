@@ -46,7 +46,8 @@ import torch.nn.functional as F
 from mmm.models import summarize_model
 
 # from mmm.models.llama import Transformer, ModelArgs
-from mmm.models.llama import Transformer, ModelArgs
+# from mmm.models.llama import Transformer, ModelArgs
+from mmm.models.llama2 import Transformer, ModelArgs
 from mmm.data.text import RandomTokenDataset
 
 
@@ -158,7 +159,7 @@ def parallelize(model: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
 
 
 def train(args: argparse.Namespace):
-    _ = ezpz.setup_torch('DDP', tensor_parallel_size=args.tpsize)
+    _ = ezpz.setup_torch('DDP', tpsize=args.tpsize)
     world_size = ezpz.get_world_size()
     assert (
         world_size % args.tpsize == 0
