@@ -15,7 +15,7 @@ from torchvision import datasets, transforms
 
 from torch.utils.data import Dataset
 from mmm import OUTPUTS_DIR
-from mmm.configs import TORCH_DTYPES
+from mmm.configs import TORCH_DTYPES_MAP
 
 
 RANK = ezpz.get_rank()
@@ -33,7 +33,7 @@ class FakeImageDataset(Dataset):
         self.dtype = (
             torch.float32
             if dtype is None
-            else (TORCH_DTYPES[dtype] if isinstance(dtype, str) else dtype)
+            else (TORCH_DTYPES_MAP[dtype] if isinstance(dtype, str) else dtype)
         )
 
     def __len__(self):
@@ -46,8 +46,6 @@ class FakeImageDataset(Dataset):
         )
         label = torch.tensor(data=(index % 1000), dtype=torch.int64)
         return rand_image, label
-
-
 
 
 def get_mnist(
@@ -121,13 +119,13 @@ def get_mnist(
 
 
 def get_fake_data(
-        img_size: int,
-        batch_size: int,
-        num_workers: int = 1,
-        pin_memory: bool = True,
-        drop_last: bool = True,
-        shuffle: bool = True,
-        dtype: Optional[str | torch.dtype] = None,
+    img_size: int,
+    batch_size: int,
+    num_workers: int = 1,
+    pin_memory: bool = True,
+    drop_last: bool = True,
+    shuffle: bool = True,
+    dtype: Optional[str | torch.dtype] = None,
 ) -> dict:
     dataset = FakeImageDataset(size=img_size, dtype=dtype)
     # loader = torch.utils.data.DataLoader(  # type:ignore
