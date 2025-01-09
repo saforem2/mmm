@@ -15,7 +15,7 @@ import torch._dynamo
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
 
-from mmm.configs import TORCH_DTYPES, TrainArgs, ViTConfig
+from mmm.configs import TORCH_DTYPES_MAP, TrainArgs, ViTConfig
 from mmm.models import summarize_model
 
 from mmm.data.vision import get_fake_data  # , get_mnist
@@ -139,7 +139,7 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
             model = FSDP(
                 model,
                 mixed_precision=MixedPrecision(
-                    param_dtype=TORCH_DTYPES[args.dtype],
+                    param_dtype=TORCH_DTYPES_MAP[args.dtype],
                     reduce_dtype=torch.float32,
                     cast_forward_inputs=True,
                 ),
@@ -151,7 +151,7 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
         logger.info('Compiling model')
         model = torch.compile(model)
 
-    torch_dtype = TORCH_DTYPES[args.dtype]
+    torch_dtype = TORCH_DTYPES_MAP[args.dtype]
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters())  # type:ignore
     model.train()  # type:ignore
