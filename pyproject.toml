@@ -27,12 +27,17 @@ dependencies = [
   "rich",
   "transformers",
   "datasets",
+  # Tokenization
+  "blobfile",
   "tiktoken",
-  "torchinfo",
   "timm",
+
+  # Miscellaneous
   "torchinfo",
+  "tomli",
   "wandb",
   "tqdm",
+
   "ambivalent @ git+https://github.com/saforem2/ambivalent",
   "ezpz @ git+https://github.com/saforem2/ezpz",
 ]
