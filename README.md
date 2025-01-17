@@ -53,12 +53,16 @@ python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
 
 </details>
 
-## 🕸️ Example: TP + FSDP on Aurora
+## 📊 Examples
 
-We can use a combination of:
+### 🕸️ TP + FSDP on Aurora
+
+See [`src/mmm/examples/fsdp_tp.py`](/src/mmm/examples/fsdp_tp.py)
+
+We use a combination of:
 
 1. Tensor Parallelism (TP)
-1. Fully Sharded Data Parallelism (FSDP)
+1. Fully Sharded Data Parallelism (FSDP) (across data-parallel (DP) groups)
 
 ```bash
 launch python3 -m mmm.examples.fsdp_tp --n_layers 24 --tpsize 4
@@ -336,10 +340,9 @@ took: 0h:00m:39s
 
 </details>
 
-## 🖼️ Example: ViT
+### 🖼️ ViT
 
-We can now `launch` the example in
-[`src/mmm/examples/vit.py`](/src/mmm/examples/vit.py):
+See [`src/mmm/examples/vit.py`](/src/mmm/examples/vit.py):
 
 ```bash
 launch python3 -m mmm.examples.vit --max_iters 10
@@ -830,8 +833,9 @@ took: 0h:01m:15s
 
 </details>
 
+### 📝 FSDP
 
-## 📝 Example: FSDP
+See [`src/mmm/examples/fsdp.py`](src/mmm/examples/fsdp.py)
 
 ```bash
 launch python3 -m mmm.examples.fsdp
