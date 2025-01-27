@@ -175,7 +175,7 @@ def set_pg_timeouts(timeout, world_mesh):
     # Otherwise, some ranks may issue collectives with the new/shorter timeout and
     # those may time out, before other ranks have finished with initialization
     # done under the old/slow timeout.
-    tdist.barrier(device_ids=[device_module.current_device()])
+    tdist.barrier()
     device_module.synchronize()
     groups = [
         world_mesh.get_group(mesh_dim) for mesh_dim in range(world_mesh.ndim)
@@ -424,9 +424,12 @@ def clip_grad_norm_(
 
     """
     grads = [p.grad for p in parameters if p.grad is not None]
-    total_norm = torch.nn.utils.get_total_norm(
-        grads, norm_type, error_if_nonfinite, foreach
-    )
+    from mmm.clip_grad import _get_total_norm, _clip_grads_with_norm_
+    total_norm = _get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
+    # total_norm = get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
+    # total_norm = torch.nn.utils.get_total_norm(
+    #     grads, norm_type, error_if_nonfinite, foreach
+    # )
 
     # If total_norm is a DTensor, the placements must be `torch.distributed._tensor.ops.math_ops._NormPartial`.
     # We can simply reduce the DTensor to get the total norm in this tensor's process group
@@ -447,6 +450,10 @@ def clip_grad_norm_(
             tdist.all_reduce(total_norm, op=tdist.ReduceOp.SUM, group=pp_mesh.get_group())
             total_norm **= 1.0 / norm_type
 
-    torch.nn.utils.clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
+    # torch.nn.utils.clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
+
+    # grads = [p.grad for p in parameters if p.grad is not None]
+    # total_norm = _get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
+    _clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
     return total_norm
 
