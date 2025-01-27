@@ -36,7 +36,8 @@ from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
     checkpoint_wrapper as ptd_checkpoint_wrapper,
 )
 
-from mmm.configs import JobConfig
+from mmm.configs import TORCH_DTYPES_MAP, JobConfig
+
 # from torch.distributed.
 # from torch.distributed.tensor.parallel import (
 #     ColwiseParallel,
@@ -109,10 +110,10 @@ def parallelize_llama(
         apply_fsdp(
             model,
             world_mesh[tuple(dp_mesh_dim_names)],
-            param_dtype=TORCH_DTYPE_MAP[
+            param_dtype=TORCH_DTYPES_MAP[
                 job_config.training.mixed_precision_param
             ],
-            reduce_dtype=TORCH_DTYPE_MAP[
+            reduce_dtype=TORCH_DTYPES_MAP[
                 job_config.training.mixed_precision_reduce
             ],
             pp_enabled=parallel_dims.pp_enabled,
@@ -253,8 +254,7 @@ def _apply_ac_to_transformer_block(module: nn.Module, ac_config):
     valid_ac_modes = ('full', 'selective')
     if ac_config.mode not in valid_ac_modes:
         raise ValueError(
-            f'Invalid AC mode: {ac_config.mode}.'
-            f'Valid modes: {valid_ac_modes}'
+            f'Invalid AC mode: {ac_config.mode}.Valid modes: {valid_ac_modes}'
         )
 
     if ac_config.mode == 'full':
@@ -357,6 +357,7 @@ def apply_fsdp(
     fsdp_config = {'mesh': dp_mesh, 'mp_policy': mp_policy}
     if cpu_offload:
         from torch.distributed._composable import CPUOffloadPolicy
+
         fsdp_config['offload_policy'] = CPUOffloadPolicy()
 
     for layer_id, transformer_block in model.layers.items():
@@ -371,9 +372,11 @@ def apply_fsdp(
         fully_shard(
             transformer_block,
             **fsdp_config,
-            reshard_after_forward=reshard_after_forward,
+            # reshard_after_forward=reshard_after_forward,
         )
-    fully_shard(model, **fsdp_config, reshard_after_forward=(not pp_enabled))
+    fully_shard(
+        model, **fsdp_config
+    )  # , reshard_after_forward=(not pp_enabled))
 
 
 def apply_ddp(
