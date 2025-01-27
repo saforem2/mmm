@@ -4,22 +4,23 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-import math
+# import math
 
-from functools import partial
+# from functools import partial
+from typing import Any
 
 import torch
 import torch.nn as nn
 
-import triton
-import triton.language as tl
+# import triton
+# import triton.language as tl
 
-from torch.distributed._tensor.placement_types import Shard, Replicate
-from torch.distributed._tensor.placement_types import _Partial as Partial
+# from torch.distributed._tensor.placement_types import Shard, Replicate, Partial
+# from torch.distributed._tensor.placement_types import _Partial as Partial
 # from torch.distributed._tensor.experimental.tp_transform import local_map
 # from torch.distributed.placement_types import Partial, Replicate, Shard
 # from torch.distributed._tensor import Replicate, Shard
-from mmm.utils import device_module
+# from mmm.utils import device_module
 # from torchtitan.utils import device_module
 # from torch.distributed._tensor import Shard, Replicate
 # from torch.distributed.tensor.parallel import loss_parallel
@@ -61,6 +62,32 @@ def build_norm(norm_type: str, dim: int, eps: float = 1e-6):
         return FusedRMSNorm(dim, eps=eps)
     else:
         raise NotImplementedError(f"Unknown norm_type: '{norm_type}'")
+
+
+class Fp32LayerNorm(nn.LayerNorm):
+    """
+    Wrapper around :class:`~torch.nn.LayerNorm` to support mixed-precision training.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            input (torch.Tensor): Input tensor.
+        Returns:
+            torch.Tensor: The normalized output tensor having the same shape as ``input``.
+        """
+        output = nn.functional.layer_norm(
+            input.float(),
+            self.normalized_shape,
+            self.weight.float() if self.weight is not None else None,
+            self.bias.float() if self.bias is not None else None,
+            self.eps,
+        )
+        return output.type_as(input)
+
 
 
 class FusedRMSNorm(nn.Module):
