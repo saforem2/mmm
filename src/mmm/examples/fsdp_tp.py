@@ -34,6 +34,7 @@ FSDP:
 """
 
 import argparse
+import logging
 from time import perf_counter
 
 import ezpz
@@ -48,9 +49,9 @@ from mmm.models import summarize_model
 # from mmm.models.llama import Transformer, ModelArgs
 # from mmm.models.llama import Transformer, ModelArgs
 from mmm.models.llama2 import Transformer, ModelArgs
-from mmm.data.text import RandomTokenDataset
 
 
+from mmm.data.llama import LlamaDataLoader
 from torch.utils.data import DataLoader
 from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
 from torch.distributed.fsdp import (
@@ -71,24 +72,28 @@ from torch.distributed.tensor.parallel import (
 logger = ezpz.get_logger(__name__)
 
 
+logging.getLogger('datasets').setLevel(logging.ERROR)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='2D Parallel Training')
     parser.add_argument('--dim', type=int, default=256)
-    parser.add_argument('--n_layers', type=int, default=24)
-    parser.add_argument('--n_heads', type=int, default=32)
-    parser.add_argument('--n_kv_heads', type=int, default=8)
-    parser.add_argument('--multiple_of', type=int, default=360)
-    parser.add_argument('--ffn_dim_multiplier', type=float, default=None)
-    parser.add_argument('--norm_eps', type=float, default=1e-5)
-    parser.add_argument('--vocab_size', type=int, default=32_000)
-    parser.add_argument('--seq_length', type=int, default=128)
+    parser.add_argument('--n-layers', type=int, default=32)
+    parser.add_argument('--n-heads', type=int, default=32)
+    parser.add_argument('--n-kv-heads', type=int, default=4)
+    parser.add_argument('--multiple-of', type=int, default=360)
+    parser.add_argument('--ffn-dim-multiplier', type=float, default=None)
+    parser.add_argument('--norm-eps', type=float, default=1e-5)
+    parser.add_argument('--vocab-size', type=int, default=32_000)
+    parser.add_argument('--seq-length', type=int, default=2048)
     parser.add_argument('--lr', type=float, default=3e-3)
-    parser.add_argument('--num_iterations', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=16)
-    parser.add_argument('--tpsize', type=int, default=2)
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch-size', type=int, default=24)
+    parser.add_argument('--tp', type=int, default=2)
+    parser.add_argument('--dataset', type=str, default='random')
     # parser.add_argument('--max_batch_size', type=int, default=None)
-    parser.add_argument('--max_seq_len', type=int, default=32768)
-    parser.add_argument('--depth_init', type=bool, default=True)
+    parser.add_argument('--max-seq-len', type=int, default=32768)
+    parser.add_argument('--depth-init', type=bool, default=True)
     # max_batch_size: int = 32
     # max_seq_len: int = 32768
     # depth_init: bool = True
@@ -158,16 +163,107 @@ def parallelize(model: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
     return sharded_model
 
 
+def get_hf_dataset():
+    def tokenize_function(examples):
+        return tokenizer(
+            examples['text'], padding='max_length', truncation=True
+        )
+
+    import random
+    from transformers import DataCollatorForLanguageModeling, AutoTokenizer
+    from datasets import load_dataset
+
+    tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7B-hf')
+    dataset = load_dataset(
+        'eliplutchok/fineweb-small-sample'
+    )  # , streaming=True)
+    dataset = dataset.with_format('torch')
+
+    tokenized_datasets = dataset.map(tokenize_function, batched=True)
+    return tokenized_datasets
+
+
+def get_dataloader():
+    tokenized_datasets = get_dataset()
+    train_dataset = tokenized_datasets['train']
+
+    def collate_tokenize(data):
+        text_batch = [element['text'] for element in data]
+        tokenized = tokenizer(
+            text_batch, padding='longest', truncation=True, return_tensors='pt'
+        )
+        return tokenized
+
+    dataloader = DataLoader(
+        train_dataset, batch_size=args.batch_size, collate_fn=collate_tokenize
+    )
+
+    return dataloader
+
+
+# def group_texts(examples):
+#     concatenated_examples = {k: sum(examples[k], []) for k in examples.keys()}
+#     total_length = len(concatenated_examples[list(examples.keys())[0]])
+#     total_length = (total_length // block_size) * block_size
+#     result = {
+#         k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
+#         for k, t in concatenated_examples.items()
+#     }
+#     result['labels'] = result['input_ids'].copy()
+#     return result
+#
+#
+def get_random_dataset():
+    from mmm.data.text import RandomTokenDataset
+
+    rdataset = RandomTokenDataset(
+        vocab_size=args.vocab_size, seq_length=args.seq_length
+    )
+    # dataset = get_dataset()
+    rdataloader = DataLoader(
+        rdataset,
+        batch_size=args.batch_size,
+    )  # , num_workers=0)
+    return {'dataset': rdataset, 'dataloader': rdataloader}
+
+
+def get_llama_data(dataset_repo: str = 'eliplutchok/fineweb-small-sample'):
+    from mmm.data.llama import LlamaDataLoader
+    llama_data_loader = LlamaDataLoader(dataset_repo=dataset_repo)
+    return llama_data_loader
+
+
+
+# Main data processing function that will concatenate all texts from our dataset and generate chunks of
+# max_seq_length.
+def group_texts(examples):
+    # Concatenate all texts.
+    concatenated_examples = {
+        k: list(chain(*examples[k])) for k in examples.keys()
+    }
+    total_length = len(concatenated_examples[list(examples.keys())[0]])
+    # We drop the small remainder, and if the total_length < max_seq_length  we exclude this batch and return an empty dict.
+    # We could add padding if the model supported it instead of this drop, you can customize this part to your needs.
+    total_length = (total_length // max_seq_length) * max_seq_length
+    # Split by chunks of max_len.
+    result = {
+        k: [
+            t[i : i + max_seq_length]
+            for i in range(0, total_length, max_seq_length)
+        ]
+        for k, t in concatenated_examples.items()
+    }
+    return result
+
+
 def train(args: argparse.Namespace):
-    _ = ezpz.setup_torch('DDP', tpsize=args.tpsize)
+    _ = ezpz.setup_torch('DDP', tensor_parallel_size=args.tp)
     world_size = ezpz.get_world_size()
-    assert (
-        world_size % args.tpsize == 0
-    ), 'WORLD_SIZE must be divisible by TPSIZE'
-    dpsize = world_size // args.tpsize
+    assert world_size % args.tp == 0, 'WORLD_SIZE must be divisible by TP'
+    dpsize = world_size // args.tp
     device_mesh = init_device_mesh(
         str(ezpz.get_torch_device()),
-        (dpsize, args.tpsize),
+        (dpsize, args.tp),
         mesh_dim_names=('dp', 'tp'),
     )
     logger.info(f'Device mesh created:\n{device_mesh=}')
@@ -180,6 +276,7 @@ def train(args: argparse.Namespace):
         vocab_size=args.vocab_size,
         multiple_of=args.multiple_of,
     )
+    logger.info(f'config:\n{config}')
     device_type = str(ezpz.get_torch_device(as_torch_device=False))
     device_id = f'{device_type}:{ezpz.get_local_rank()}'
     model = Transformer.from_model_args(config)
@@ -188,20 +285,46 @@ def train(args: argparse.Namespace):
     )
     model.to(device_id)
     model = parallelize(model, device_mesh)
-    logger.info(f'Creating AdamW optimizer with lr={args.lr}')
+    logger.info(f'Creating optimizer=AdamW with lr={args.lr}')
+    import torch
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, foreach=True)
 
     device = ezpz.get_torch_device(as_torch_device=False)
+    if args.dataset == 'random':
+        data = get_random_dataset()
+        dataset = data['dataset']
+        dataloader = data['dataloader']
+    elif args.dataset == 'llama':
+        data = get_llama_data()
+        dataloader = data.get_data_loader()
+    else:
+        from mmm.data.hf import get_torch_dataset
 
-    dataset = RandomTokenDataset(
-        vocab_size=args.vocab_size, seq_length=args.seq_length
-    )
-    dataloader = DataLoader(
-        dataset, batch_size=args.batch_size
-    )  # , num_workers=0)
-    logger.info('\nStarting 2D training...')
+        # # Load a subset of FineWeb (replace with the actual dataset name if different)
+        dataset_name = 'eliplutchok/fineweb-small-sample'  # Replace with the correct dataset name
+        # split = "train[:1000]"  # Load the first 1000 samples for testing
+        tokenizer_name = 'meta-llama/llama-2-7b-hf'
+        # Get the PyTorch-compatible dataset
+        dataset = get_torch_dataset(
+            dataset_name,
+            tokenizer_name=tokenizer_name,
+            max_length=args.seq_length,
+        )
+        # # Create a DataLoader for batching
+        dataloader = DataLoader(
+            hfdset, batch_size=args.batch_size, shuffle=True
+        )
+
+    logger.info('Starting 2D training...')
     model.train()
     history = ezpz.History()
+    # # Iterate through the DataLoader and inspect a batch
+    # for batch in dataloader:
+    #     print("Batch input_ids shape:", batch["input_ids"].shape)
+    #     print("Batch attention_mask shape:", batch["attention_mask"].shape)
+    #     print("Sample input_ids:", batch["input_ids"][0])
+    #     break  # Stop after the first batch for testing
 
     # # model.init_weights()
     # tdist.barrier()
@@ -209,37 +332,59 @@ def train(args: argparse.Namespace):
     # while for SP, input can be different across all ranks
     # We will use dp_rank for setting the random seed
     # to mimic the behavior of the dataloader
-    for idx, batch in enumerate(dataloader):
-        t0 = perf_counter()
-        batch = batch.to(device)
-        batch.to(torch.long)
-        inp = batch[:, :-1]
-        labels = batch[:, 1:]
-        if idx == 0:
-            logger.info(f'{inp.shape=}')
-        output = model(inp)
-        t1 = perf_counter()
-        loss = F.cross_entropy(
-            output.reshape(-1, output.size(-1)), labels.reshape(-1)
-        )
-        loss.backward()
-        optimizer.step()
-        t2 = perf_counter()
-        logger.info(
-            history.update(
-                {
-                    'iter': idx,
-                    'loss': loss.item(),
-                    'dt': t2 - t0,
-                    'dtf': t1 - t0,
-                    'dtb': t2 - t1,
-                }
+    import torch.distributed as tdist
+    from ezpz.utils import breakpoint
+
+    # breakpoint(0)
+    for epoch in range(args.epochs):
+        for idx, batch in enumerate(dataloader):
+            t0 = perf_counter()
+            if isinstance(batch, dict) and 'input_ids' in batch:
+                x = batch['input_ids']
+            else:
+                x = batch
+            assert isinstance(x, torch.Tensor)
+            x.to(device)
+            # try:
+            #     batch = batch['input_ids'].to(device)
+            # except Exception:
+            #     breakpoint(0)
+            # tdist.barrier()
+            x.to(torch.long)
+            inp = x[:, :-1].to(device)
+            labels = x[:, 1:].to(device)
+            # try:
+            output = model(inp)
+            # except Exception:
+            #     breakpoint(0)
+            # tdist.barrier()
+            t1 = perf_counter()
+            loss = F.cross_entropy(
+                output.reshape(-1, output.size(-1)), labels.reshape(-1)
             )
-        )
+            loss.backward()
+            optimizer.step()
+            t2 = perf_counter()
+            logger.info(
+                history.update(
+                    {
+                        'train/epoch': epoch,
+                        'train/iter': idx,
+                        'train/loss': loss.item(),
+                        'train/dt': t2 - t0,
+                        'train/dtf': t1 - t0,
+                        'train/dtb': t2 - t1,
+                    }
+                ).replace('train/', '')
+            )
+            if epoch == 0 and idx == 0:
+                logger.info(f'{inp.shape=}')
     logger.info('Finished 2D training')
     if ezpz.get_rank() == 0:
         dataset = history.finalize(
-            run_name='mmm-fsdp-tp', dataset_fname='train', therm_frac=0.1
+            run_name='mmm-fsdp-tp',
+            dataset_fname='train',
+            warmup=0.1,
         )
         logger.info(f'{dataset=}')
 
