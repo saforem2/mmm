@@ -19,6 +19,9 @@ import torch
 
 from torch.distributed.elastic.multiprocessing.errors import record
 
+# [rank0]:   File "/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/src/mmm/train.py", line 232, in main
+# [rank0]:     device_mem_stats = device_memory_monitor.get_peak_stats()
+
 
 # from torchtitan import utils
 # from torchtitan.checkpoint import CheckpointManager, TrainState
@@ -229,12 +232,15 @@ def main(job_config: JobConfig):
         model.train()
         model_parts = [model]
 
-    device_mem_stats = device_memory_monitor.get_peak_stats()
-    logger.info(
-        f"{device_type.upper()} memory usage for model: "
-        f"{device_mem_stats.max_reserved_gib:.2f}GiB"
-        f"({device_mem_stats.max_reserved_pct:.2f}%)"
-    )
+    try:
+        device_mem_stats = device_memory_monitor.get_peak_stats()
+        logger.info(
+            f"{device_type.upper()} memory usage for model: "
+            f"{device_mem_stats.max_reserved_gib:.2f}GiB"
+            f"({device_mem_stats.max_reserved_pct:.2f}%)"
+        )
+    except Exception as e:
+        logger.error(f"Error getting memory stats: {e}")
 
     # build optimizer after applying parallelisms to the model
     optimizers = build_optimizers(model_parts, job_config)
@@ -244,7 +250,7 @@ def main(job_config: JobConfig):
 
     # load initial checkpoint
     checkpoint = CheckpointManager(
-        downloader=data_loader,
+        dataloader=data_loader,
         model_parts=model_parts,
         optimizers=optimizers,
         lr_schedulers=lr_schedulers,
@@ -286,7 +292,10 @@ def main(job_config: JobConfig):
     ntokens_since_last_log = 0
     data_loading_times = []
     time_last_log = time.perf_counter()
-    device_memory_monitor.reset_peak_stats()
+    try:
+        device_memory_monitor.reset_peak_stats()
+    except Exception as e:
+        logger.error(f"Error resetting memory stats: {e}")
     checkpoint.reset()
 
     # train loop
@@ -298,6 +307,8 @@ def main(job_config: JobConfig):
         f"total steps {job_config.training.steps} "
         f"(warmup {job_config.training.warmup_steps})"
     )
+    from ezpz import History
+    history = History()
     with maybe_enable_profiling(
         job_config, global_step=train_state.step
     ) as torch_profiler, maybe_enable_memory_snapshot(
@@ -421,7 +432,12 @@ def main(job_config: JobConfig):
                 time_data_loading = sum(data_loading_times) / len(data_loading_times)
                 time_data_loading_pct = 100 * sum(data_loading_times) / time_delta
 
-                device_mem_stats = device_memory_monitor.get_peak_stats()
+                try:
+                    device_mem_stats = device_memory_monitor.get_peak_stats()
+                except Exception as e:
+                    device_mem_stats = None
+                    if train_state.step == 1:
+                        logger.error(f"Error getting memory stats: {e}")
 
                 metrics = {
                     "loss_metrics/global_avg_loss": global_avg_loss,
@@ -431,29 +447,57 @@ def main(job_config: JobConfig):
                     "time_metrics/end_to_end(s)": time_end_to_end,
                     "time_metrics/data_loading(s)": time_data_loading,
                     "time_metrics/data_loading(%)": time_data_loading_pct,
-                    "memory/max_active(GiB)": device_mem_stats.max_active_gib,
-                    "memory/max_active(%)": device_mem_stats.max_active_pct,
-                    "memory/max_reserved(GiB)": device_mem_stats.max_reserved_gib,
-                    "memory/max_reserved(%)": device_mem_stats.max_reserved_pct,
-                    "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
-                    "memory/num_ooms": device_mem_stats.num_ooms,
                 }
+                if device_mem_stats:
+                    metrics |= {
+                        "memory/max_active(GiB)": device_mem_stats.max_active_gib,
+                        "memory/max_active(%)": device_mem_stats.max_active_pct,
+                        "memory/max_reserved(GiB)": device_mem_stats.max_reserved_gib,
+                        "memory/max_reserved(%)": device_mem_stats.max_reserved_pct,
+                        "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
+                        "memory/num_ooms": device_mem_stats.num_ooms,
+                    }
+                logger.info(
+                    history.update(
+                        {
+                            'step': train_state.step,
+                            # 'loss': global_avg_loss,
+                            # 'tps': tps,
+                            # 'mfu': mfu,
+                            **metrics
+                        }
+                    ).replace('loss_metrics/', '').replace('time_metrics/', '').replace('memory/', '')
+                )
+
                 metric_logger.log(metrics, step=train_state.step)
 
-                logger.info(
-                    f"{color.cyan}step: {train_state.step:2}  "
-                    f"{color.green}loss: {global_avg_loss:7.4f}  "
-                    f"{color.yellow}memory: {device_mem_stats.max_reserved_gib:5.2f}GiB"
-                    f"({device_mem_stats.max_reserved_pct:.2f}%)  "
-                    f"{color.blue}tps: {round(tps):,}  "
-                    f"{color.magenta}mfu: {mfu:.2f}%{color.reset}"
-                )
+                # lstr = ' '.join([
+                #     f"step={train_state.step:2}",
+                #     f"loss={global_avg_loss:7.4f}",
+                #     f"tps={round(tps):,}",
+                #     f"mfu={mfu:.2f}%{color.reset}"
+                # ])
+                # if device_mem_stats:
+                #     lstr += ' '.join([f"({device_mem_stats.max_reserved_pct:.2f}%)"])
+                # logger.info(lstr)
+                # logger.info(
+                #     f"{color.cyan}step: {train_state.step:2}  "
+                #     f"{color.green}loss: {global_avg_loss:7.4f}  "
+                #     f"({device_mem_stats.max_reserved_pct:.2f}%)  "
+                #     f"{color.blue}tps: {round(tps):,}  "
+                #     f"{color.magenta}mfu: {mfu:.2f}%{color.reset}"
+                #     f"{color.yellow}memory: {device_mem_stats.max_reserved_gib:5.2f}GiB"
+                # )
 
                 losses_since_last_log.clear()
                 ntokens_since_last_log = 0
                 data_loading_times.clear()
                 time_last_log = time.perf_counter()
-                device_memory_monitor.reset_peak_stats()
+                try:
+                    device_memory_monitor.reset_peak_stats()
+                except Exception as e:
+                    if train_state.step == 1:
+                        logger.error(f"Error resetting memory stats: {e}")
 
             checkpoint.save(
                 train_state.step, force=(train_state.step == job_config.training.steps)
