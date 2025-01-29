@@ -1,7 +1,6 @@
 # User Added
 *.bak
 outputs/*
-data/
 *.gz
 *-ubyte
 *.o[1-9]*

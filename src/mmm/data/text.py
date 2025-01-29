@@ -69,3 +69,85 @@ class ConstantLengthDataset(IterableDataset):
                 input_ids = all_token_ids[i : i + self.seq_length]
                 if len(input_ids) == self.seq_length:
                     yield torch.tensor(input_ids)
+
+
+def get_hf_dataset():
+    def tokenize_function(examples):
+        return tokenizer(
+            examples['text'], padding='max_length', truncation=True
+        )
+
+    import random
+    from transformers import DataCollatorForLanguageModeling, AutoTokenizer
+    from datasets import load_dataset
+
+    tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7B-hf')
+    dataset = load_dataset(
+        'eliplutchok/fineweb-small-sample'
+    )  # , streaming=True)
+    dataset = dataset.with_format('torch')
+
+    tokenized_datasets = dataset.map(tokenize_function, batched=True)
+    return tokenized_datasets
+
+
+def get_dataloader(batch_size):
+
+    # tokenized_datasets = get_dataset()
+    train_dataset = tokenized_datasets['train']
+
+    def collate_tokenize(data):
+        text_batch = [element['text'] for element in data]
+        tokenized = tokenizer(
+            text_batch, padding='longest', truncation=True, return_tensors='pt'
+        )
+        return tokenized
+
+    dataloader = DataLoader(
+        train_dataset, batch_size=batch_size, collate_fn=collate_tokenize
+    )
+
+    return dataloader
+
+
+def get_random_dataset():
+    from mmm.data.text import RandomTokenDataset
+
+    rdataset = RandomTokenDataset(
+        vocab_size=args.vocab_size, seq_length=args.seq_length
+    )
+    # dataset = get_dataset()
+    rdataloader = DataLoader(
+        rdataset,
+        batch_size=args.batch_size,
+    )  # , num_workers=0)
+    return {'dataset': rdataset, 'dataloader': rdataloader}
+
+
+def get_hf_data(dataset_repo: str = 'eliplutchok/fineweb-small-sample'):
+    from mmm.data.llama import LlamaDataLoader
+
+    llama_data_loader = LlamaDataLoader(dataset_repo=dataset_repo)
+    return llama_data_loader
+
+
+# Main data processing function that will concatenate all texts from our dataset and generate chunks of
+# max_seq_length.
+def group_texts(examples):
+    # Concatenate all texts.
+    concatenated_examples = {
+        k: list(chain(*examples[k])) for k in examples.keys()
+    }
+    total_length = len(concatenated_examples[list(examples.keys())[0]])
+    # We drop the small remainder, and if the total_length < max_seq_length  we exclude this batch and return an empty dict.
+    # We could add padding if the model supported it instead of this drop, you can customize this part to your needs.
+    total_length = (total_length // max_seq_length) * max_seq_length
+    # Split by chunks of max_len.
+    result = {
+        k: [
+            t[i : i + max_seq_length]
+            for i in range(0, total_length, max_seq_length)
+        ]
+        for k, t in concatenated_examples.items()
+    }
+    return result
