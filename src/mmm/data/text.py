@@ -2,9 +2,10 @@
 mmm/data/text.py
 """
 
+from itertools import chain
 import torch
 
-from torch.utils.data import Dataset, IterableDataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset
 
 
 class RandomTokenDataset(Dataset):
@@ -77,8 +78,7 @@ def get_hf_dataset():
             examples['text'], padding='max_length', truncation=True
         )
 
-    import random
-    from transformers import DataCollatorForLanguageModeling, AutoTokenizer
+    from transformers import AutoTokenizer
     from datasets import load_dataset
 
     tokenizer = AutoTokenizer.from_pretrained('meta-llama/Llama-2-7B-hf')
@@ -91,37 +91,37 @@ def get_hf_dataset():
     return tokenized_datasets
 
 
-def get_dataloader(batch_size):
+# def get_dataloader(batch_size):
+#     # tokenized_datasets = get_dataset()
+#     train_dataset = tokenized_datasets['train']
+#
+#     def collate_tokenize(data):
+#         text_batch = [element['text'] for element in data]
+#         tokenized = tokenizer(
+#             text_batch, padding='longest', truncation=True, return_tensors='pt'
+#         )
+#         return tokenized
+#
+#     dataloader = DataLoader(
+#         train_dataset, batch_size=batch_size, collate_fn=collate_tokenize
+#     )
+#
+#     return dataloader
 
-    # tokenized_datasets = get_dataset()
-    train_dataset = tokenized_datasets['train']
 
-    def collate_tokenize(data):
-        text_batch = [element['text'] for element in data]
-        tokenized = tokenizer(
-            text_batch, padding='longest', truncation=True, return_tensors='pt'
-        )
-        return tokenized
-
-    dataloader = DataLoader(
-        train_dataset, batch_size=batch_size, collate_fn=collate_tokenize
-    )
-
-    return dataloader
-
-
-def get_random_dataset():
+def get_random_dataset(
+    batch_size: int, vocab_size: int, seq_length: int
+) -> dict:
     from mmm.data.text import RandomTokenDataset
 
-    rdataset = RandomTokenDataset(
-        vocab_size=args.vocab_size, seq_length=args.seq_length
-    )
-    # dataset = get_dataset()
-    rdataloader = DataLoader(
-        rdataset,
-        batch_size=args.batch_size,
-    )  # , num_workers=0)
-    return {'dataset': rdataset, 'dataloader': rdataloader}
+    return {
+        'dataset': (
+            dset := RandomTokenDataset(
+                vocab_size=vocab_size, seq_length=seq_length
+            )
+        ),
+        'dataloader': DataLoader(dset, batch_size=batch_size),
+    }
 
 
 def get_hf_data(dataset_repo: str = 'eliplutchok/fineweb-small-sample'):
@@ -133,7 +133,7 @@ def get_hf_data(dataset_repo: str = 'eliplutchok/fineweb-small-sample'):
 
 # Main data processing function that will concatenate all texts from our dataset and generate chunks of
 # max_seq_length.
-def group_texts(examples):
+def group_texts(examples, max_seq_length):
     # Concatenate all texts.
     concatenated_examples = {
         k: list(chain(*examples[k])) for k in examples.keys()
