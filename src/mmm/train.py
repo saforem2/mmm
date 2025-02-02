@@ -82,19 +82,17 @@ def main(job_config: JobConfig):
     gc_handler = utils.GarbageCollection(gc_freq=job_config.training.gc_freq)
 
     from ezpz.utils import breakpoint
-    # init distributed
-    RANK = ezpz.setup_torch(
-        backend='DDP',
-        # tpsize=job_config.training.tensor_parallel_degree,
-        # cpsize=job_config.training.context_parallel_degree,
-        # ppsize=job_config.training.pipeline_parallel_degree,
-    )
-    # try:
-    # except Exception as exc:
-    #     breakpoint(0)
-    #     # raise exc
-    # tdist.barrier()
+    tpsize = job_config.training.tensor_parallel_degree
+    _ = ezpz.setup_torch('DDP', tensor_parallel_size=tpsize)
     world_size = ezpz.get_world_size()
+    assert world_size % tpsize == 0, 'WORLD_SIZE must be divisible by TP'
+    dpsize = world_size // tpsize
+    #device_mesh = init_device_mesh(
+    #    str(ezpz.get_torch_device()),
+    #    (dpsize, tpsize),
+    #    mesh_dim_names=('dp', 'tp'),
+    #)
+    # logger.info(f'Device mesh created:\n{device_mesh=}')
     parallel_dims = ParallelDims(
         dp_shard=job_config.training.data_parallel_shard_degree,
         dp_replicate=job_config.training.data_parallel_replicate_degree,
@@ -523,10 +521,10 @@ def main(job_config: JobConfig):
 
     metric_logger.close()
     logger.info("Training completed")
+    torch.distributed.destroy_process_group()
 
 
 if __name__ == "__main__":
     config = JobConfig()
     config.parse_args()
     main(config)
-    torch.distributed.destroy_process_group()
