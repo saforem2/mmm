@@ -70,273 +70,298 @@ launch python3 -m mmm.examples.fsdp_tp --n_layers 24 --tpsize 4
 
 <details closed><summary>Output:</summary>
 
+
 <details closed><summary>Aurora @ ALCF:</summary>
 
 ```python
-#[🐍 aurora_nre_models_frameworks-2024.2.1_u1](👻 aurora_nre_models_frameworks-2024.2.1_u1)
-#[09:57:34 AM][x4404c5s2b0n0][/f/A/f/p/s/mmm][🌱 main][$!?][⏱️ 26s]
-# $ launch python3 -Wignore -m mmm.examples.fsdp_tp --n_layers 24 --tpsize 4
-Disabling local launch: multi-node application
-Connected to tcp://x4509c0s2b0n0.hostmgmt2509.cm.aurora.alcf.anl.gov:7919
-Found executable /flare/Aurora_deployment/foremans/projects/saforem2/mmm/venvs/aurora_nre_models_frameworks-2024.2.1_u1/bin/python3
-Launching application 15ace429-216f-4cad-afa5-773dd63ef116
-[2025-01-03 09:57:47,333] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to xpu (auto detect)
-# ...clipped...
-[2025-01-03 09:57:47,972] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to xpu (auto detect)
-[2025-01-03 09:57:52.544034][INFO][__init__.py:146] - > initializing tensor parallel with size 4
-[2025-01-03 09:57:52.546527][INFO][__init__.py:151] - > initializing context parallel with size 1
-[2025-01-03 09:57:52.546977][INFO][__init__.py:156] - > initializing pipeline with size 1
-[2025-01-03 09:57:52.547377][INFO][__init__.py:159] - > initializing ddp with size 12
-2025:01:03-09:57:52:(92348) |CCL_WARN| value of CCL_LOG_LEVEL changed to be error (default:warn)
-[2025-01-03 09:57:53.665930][INFO][dist.py:818] - Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
-[2025-01-03 09:57:53.780030][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 0/47] [tp:0/3][dp: 0/11]
-[2025-01-03 09:57:53.779551][INFO][dist.py:859] - ['x4509c0s2b0n0'][11/47] [tp:3/3][dp: 2/11]
-[2025-01-03 09:57:53.779562][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 3/47] [tp:3/3][dp: 0/11]
-[2025-01-03 09:57:53.779566][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 7/47] [tp:3/3][dp: 1/11]
-[2025-01-03 09:57:53.780021][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 8/47] [tp:0/3][dp: 2/11]
-[2025-01-03 09:57:53.780023][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 2/47] [tp:2/3][dp: 0/11]
-[2025-01-03 09:57:53.780010][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 5/47] [tp:1/3][dp: 1/11]
-[2025-01-03 09:57:53.780021][INFO][dist.py:859] - ['x4509c0s2b0n0'][10/47] [tp:2/3][dp: 2/11]
-[2025-01-03 09:57:53.780023][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 1/47] [tp:1/3][dp: 0/11]
-[2025-01-03 09:57:53.780039][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 4/47] [tp:0/3][dp: 1/11]
-[2025-01-03 09:57:53.780014][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 9/47] [tp:1/3][dp: 2/11]
-[2025-01-03 09:57:53.779500][INFO][dist.py:859] - ['x4206c2s1b0n0'][35/47] [tp:3/3][dp: 8/11]
-[2025-01-03 09:57:53.779507][INFO][dist.py:859] - ['x4206c2s1b0n0'][27/47] [tp:3/3][dp: 6/11]
-[2025-01-03 09:57:53.779509][INFO][dist.py:859] - ['x4206c2s1b0n0'][31/47] [tp:3/3][dp: 7/11]
-[2025-01-03 09:57:53.779540][INFO][dist.py:859] - ['x4404c5s2b0n0'][43/47] [tp:3/3][dp:10/11]
-[2025-01-03 09:57:53.779982][INFO][dist.py:859] - ['x4206c2s1b0n0'][24/47] [tp:0/3][dp: 6/11]
-[2025-01-03 09:57:53.779550][INFO][dist.py:859] - ['x4404c5s2b0n0'][47/47] [tp:3/3][dp:11/11]
-[2025-01-03 09:57:53.779971][INFO][dist.py:859] - ['x4206c2s1b0n0'][25/47] [tp:1/3][dp: 6/11]
-[2025-01-03 09:57:53.779558][INFO][dist.py:859] - ['x4206c0s0b0n0'][15/47] [tp:3/3][dp: 3/11]
-[2025-01-03 09:57:53.779972][INFO][dist.py:859] - ['x4206c2s1b0n0'][26/47] [tp:2/3][dp: 6/11]
-[2025-01-03 09:57:53.779545][INFO][dist.py:859] - ['x4206c0s0b0n0'][19/47] [tp:3/3][dp: 4/11]
-[2025-01-03 09:57:53.780016][INFO][dist.py:859] - ['x4404c5s2b0n0'][36/47] [tp:0/3][dp: 9/11]
-[2025-01-03 09:57:53.780066][INFO][dist.py:859] - ['x4509c0s2b0n0'][ 6/47] [tp:2/3][dp: 1/11]
-[2025-01-03 09:57:53.779552][INFO][dist.py:859] - ['x4206c0s0b0n0'][23/47] [tp:3/3][dp: 5/11]
-[2025-01-03 09:57:53.779979][INFO][dist.py:859] - ['x4206c2s1b0n0'][28/47] [tp:0/3][dp: 7/11]
-[2025-01-03 09:57:53.779996][INFO][dist.py:859] - ['x4404c5s2b0n0'][37/47] [tp:1/3][dp: 9/11]
-[2025-01-03 09:57:53.780021][INFO][dist.py:859] - ['x4206c0s0b0n0'][12/47] [tp:0/3][dp: 3/11]
-[2025-01-03 09:57:53.779957][INFO][dist.py:859] - ['x4206c2s1b0n0'][29/47] [tp:1/3][dp: 7/11]
-[2025-01-03 09:57:53.780000][INFO][dist.py:859] - ['x4206c0s0b0n0'][13/47] [tp:1/3][dp: 3/11]
-[2025-01-03 09:57:53.779978][INFO][dist.py:859] - ['x4206c2s1b0n0'][32/47] [tp:0/3][dp: 8/11]
-[2025-01-03 09:57:53.780022][INFO][dist.py:859] - ['x4206c0s0b0n0'][14/47] [tp:2/3][dp: 3/11]
-[2025-01-03 09:57:53.779964][INFO][dist.py:859] - ['x4206c2s1b0n0'][33/47] [tp:1/3][dp: 8/11]
-[2025-01-03 09:57:53.780032][INFO][dist.py:859] - ['x4206c0s0b0n0'][16/47] [tp:0/3][dp: 4/11]
-[2025-01-03 09:57:53.780014][INFO][dist.py:859] - ['x4206c0s0b0n0'][17/47] [tp:1/3][dp: 4/11]
-[2025-01-03 09:57:53.779970][INFO][dist.py:859] - ['x4206c2s1b0n0'][34/47] [tp:2/3][dp: 8/11]
-[2025-01-03 09:57:53.780024][INFO][dist.py:859] - ['x4404c5s2b0n0'][38/47] [tp:2/3][dp: 9/11]
-[2025-01-03 09:57:53.780014][INFO][dist.py:859] - ['x4206c0s0b0n0'][20/47] [tp:0/3][dp: 5/11]
-[2025-01-03 09:57:53.780031][INFO][dist.py:859] - ['x4206c2s1b0n0'][30/47] [tp:2/3][dp: 7/11]
-[2025-01-03 09:57:53.779557][INFO][dist.py:859] - ['x4404c5s2b0n0'][39/47] [tp:3/3][dp: 9/11]
-[2025-01-03 09:57:53.779990][INFO][dist.py:859] - ['x4206c0s0b0n0'][21/47] [tp:1/3][dp: 5/11]
-[2025-01-03 09:57:53.780024][INFO][dist.py:859] - ['x4206c0s0b0n0'][22/47] [tp:2/3][dp: 5/11]
-[2025-01-03 09:57:53.780065][INFO][dist.py:859] - ['x4206c0s0b0n0'][18/47] [tp:2/3][dp: 4/11]
-[2025-01-03 09:57:53.780019][INFO][dist.py:859] - ['x4404c5s2b0n0'][40/47] [tp:0/3][dp:10/11]
-[2025-01-03 09:57:53.780004][INFO][dist.py:859] - ['x4404c5s2b0n0'][41/47] [tp:1/3][dp:10/11]
-[2025-01-03 09:57:53.780046][INFO][dist.py:859] - ['x4404c5s2b0n0'][42/47] [tp:2/3][dp:10/11]
-[2025-01-03 09:57:53.780005][INFO][dist.py:859] - ['x4404c5s2b0n0'][44/47] [tp:0/3][dp:11/11]
-[2025-01-03 09:57:53.779988][INFO][dist.py:859] - ['x4404c5s2b0n0'][45/47] [tp:1/3][dp:11/11]
-[2025-01-03 09:57:53.780001][INFO][dist.py:859] - ['x4404c5s2b0n0'][46/47] [tp:2/3][dp:11/11]
-[2025-01-03 09:57:53.784438][INFO][fsdp_tp.py:172] - Device mesh created:
-device_mesh=DeviceMesh([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23], [24, 25, 26, 27], [28, 29, 30, 31], [32, 33, 34, 35], [36, 37, 38, 39], [40, 41, 42, 43], [44, 45, 46, 47]], mesh_dim_names=('dp', 'tp'))
-[2025-01-03 09:57:54.354114][INFO][fsdp_tp.py:185] -
+# $ launch python3 -m mmm.examples.fsdp_tp --tp 4 --epochs 5 --batch-size 4 --dim=4096 | egrep -vi 'cu|CCL'
+[2025-02-02 15:25:42][I][datasets/config:54:datasets] PyTorch version 2.3.1+cxx11.abi available.
+[2025-02-02 15:25:42][I][datasets/config:112:datasets] TensorFlow version 2.15.1 available.
+[2025-02-02 15:25:42][I][datasets/config:125:datasets] JAX version 0.5.0 available.
+[2025-02-02 15:25:42][I][ezpz/dist:505] Using get_torch_device_type()='xpu' with backend='ccl'
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 2/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 1/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 3/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 5/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 4/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 9/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][10/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 8/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][11/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 6/23]
+[2025-02-02 15:25:42][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 7/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][19/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][15/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][12/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][13/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][16/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][14/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][17/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][18/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][22/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][23/23]
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][21/23]
+[2025-02-02 15:25:43][I][tp/__init__:146:ezpz.tp] > initializing tensor parallel with size 4
+[2025-02-02 15:25:43][I][tp/__init__:151:ezpz.tp] > initializing context parallel with size 1
+[2025-02-02 15:25:43][I][tp/__init__:156:ezpz.tp] > initializing pipeline with size 1
+[2025-02-02 15:25:43][I][tp/__init__:159:ezpz.tp] > initializing ddp with size 6
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s2b0n0'][20/23]
+[2025-02-02 15:25:43][I][ezpz/dist:835] Using device='xpu' with backend='DDP' + 'ccl' for distributed training.
+[2025-02-02 15:25:43][I][ezpz/dist:881] ['x4515c0s1b0n0'][ 0/23]
+[2025-02-02 15:25:43][I][examples/fsdp_tp:177:__main__] Device mesh created:
+device_mesh=DeviceMesh([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23]], mesh_dim_names=('dp', 'tp'))
+[2025-02-02 15:25:43][I][examples/fsdp_tp:187:__main__] config:
+ModelArgs(dim=4096, n_layers=32, n_heads=32, n_kv_heads=4, vocab_size=32000, multiple_of=360, ffn_dim_multiplier=None, norm_eps=1e-05, max_batch_size=32, max_seq_len=32768, depth_init=True)
+[2025-02-02 15:26:29][I][examples/fsdp_tp:191:__main__]
 =================================================================
 Layer (type:depth-idx)                   Param #
 =================================================================
 Transformer                              --
-├─Embedding: 1-1                         8,192,000
+├─Embedding: 1-1                         131,072,000
 ├─ModuleList: 1-2                        --
-│    └─TransformerBlock: 2-1             717,312
-│    └─TransformerBlock: ...             717,312
-│    └─TransformerBlock: 2-24            717,312
-├─RMSNorm: 1-3                           256
-├─Linear: 1-4                            8,192,000
+│    └─TransformerBlock: 2-1             174,891,008
+│    └─TransformerBlock: 2-2             174,891,008
+│    └─TransformerBlock: 2-3             174,891,008
+│    └─TransformerBlock: 2-4             174,891,008
+│    └─TransformerBlock: 2-5             174,891,008
+│    └─TransformerBlock: 2-6             174,891,008
+│    └─TransformerBlock: 2-7             174,891,008
+│    └─TransformerBlock: 2-8             174,891,008
+│    └─TransformerBlock: 2-9             174,891,008
+│    └─TransformerBlock: 2-10            174,891,008
+│    └─TransformerBlock: 2-11            174,891,008
+│    └─TransformerBlock: 2-12            174,891,008
+│    └─TransformerBlock: 2-13            174,891,008
+│    └─TransformerBlock: 2-14            174,891,008
+│    └─TransformerBlock: 2-15            174,891,008
+│    └─TransformerBlock: 2-16            174,891,008
+│    └─TransformerBlock: 2-17            174,891,008
+│    └─TransformerBlock: 2-18            174,891,008
+│    └─TransformerBlock: 2-19            174,891,008
+│    └─TransformerBlock: 2-20            174,891,008
+│    └─TransformerBlock: 2-21            174,891,008
+│    └─TransformerBlock: 2-22            174,891,008
+│    └─TransformerBlock: 2-23            174,891,008
+│    └─TransformerBlock: 2-24            174,891,008
+│    └─TransformerBlock: 2-25            174,891,008
+│    └─TransformerBlock: 2-26            174,891,008
+│    └─TransformerBlock: 2-27            174,891,008
+│    └─TransformerBlock: 2-28            174,891,008
+│    └─TransformerBlock: 2-29            174,891,008
+│    └─TransformerBlock: 2-30            174,891,008
+│    └─TransformerBlock: 2-31            174,891,008
+│    └─TransformerBlock: 2-32            174,891,008
+├─RMSNorm: 1-3                           4,096
+├─Linear: 1-4                            131,072,000
 =================================================================
-Total params: 33,599,744
-Trainable params: 33,599,744
+Total params: 5,858,660,352
+Trainable params: 5,858,660,352
 Non-trainable params: 0
 =================================================================
-[2025-01-03 09:57:54.989514][INFO][fsdp_tp.py:156] - Model after parallelization:
+2025:02:02-15:26:31:( 3698) |CCL_WARN| value of CCL_LOG_LEVEL changed to be error (default:warn)
+[2025-02-02 15:26:31][I][examples/fsdp_tp:163:__main__] Model after parallelization:
 sharded_model=FullyShardedDataParallel(
   (_fsdp_wrapped_module): Transformer(
-    (tok_embeddings): Embedding(32000, 256)
+    (tok_embeddings): Embedding(32000, 4096)
     (layers): ModuleList(
-      (0-23): 24 x TransformerBlock(
+      (0-31): 32 x TransformerBlock(
         (attention): Attention(
-          (wq): Linear(in_features=256, out_features=256, bias=False)
-          (wk): Linear(in_features=256, out_features=64, bias=False)
-          (wv): Linear(in_features=256, out_features=64, bias=False)
-          (wo): Linear(in_features=256, out_features=256, bias=False)
+          (wq): Linear(in_features=4096, out_features=4096, bias=False)
+          (wk): Linear(in_features=4096, out_features=512, bias=False)
+          (wv): Linear(in_features=4096, out_features=512, bias=False)
+          (wo): Linear(in_features=4096, out_features=4096, bias=False)
         )
         (feed_forward): FeedForward(
-          (w1): Linear(in_features=256, out_features=720, bias=False)
-          (w2): Linear(in_features=720, out_features=256, bias=False)
-          (w3): Linear(in_features=256, out_features=720, bias=False)
+          (w1): Linear(in_features=4096, out_features=11160, bias=False)
+          (w2): Linear(in_features=11160, out_features=4096, bias=False)
+          (w3): Linear(in_features=4096, out_features=11160, bias=False)
         )
         (attention_norm): RMSNorm()
         (ffn_norm): RMSNorm()
       )
     )
     (norm): RMSNorm()
-    (output): Linear(in_features=256, out_features=32000, bias=False)
+    (output): Linear(in_features=4096, out_features=32000, bias=False)
   )
 )
 
-[2025-01-03 09:57:54.992906][INFO][fsdp_tp.py:190] - Creating AdamW optimizer with lr=0.003
-[2025-01-03 09:57:54.994139][INFO][fsdp_tp.py:201] -
-Starting 2D training...
-[2025-01-03 09:57:54.995754][INFO][fsdp_tp.py:218] - inp.shape=torch.Size([16, 128])
-[2025-01-03 09:58:07.084567][INFO][fsdp_tp.py:227] - iter=0 loss=10.863029 dt=12.088833 dtf=11.562250 dtb=0.526583
-[2025-01-03 09:58:07.491328][INFO][fsdp_tp.py:227] - iter=1 loss=10.827834 dt=0.405578 dtf=0.161620 dtb=0.243958
-[2025-01-03 09:58:07.893360][INFO][fsdp_tp.py:227] - iter=2 loss=10.783049 dt=0.400887 dtf=0.162063 dtb=0.238825
-[2025-01-03 09:58:08.294581][INFO][fsdp_tp.py:227] - iter=3 loss=10.761011 dt=0.400123 dtf=0.161115 dtb=0.239009
-[2025-01-03 09:58:08.694642][INFO][fsdp_tp.py:227] - iter=4 loss=10.702212 dt=0.399039 dtf=0.160752 dtb=0.238287
-[2025-01-03 09:58:09.095107][INFO][fsdp_tp.py:227] - iter=5 loss=10.734871 dt=0.399371 dtf=0.159905 dtb=0.239466
-[2025-01-03 09:58:09.494406][INFO][fsdp_tp.py:227] - iter=6 loss=10.697002 dt=0.398326 dtf=0.160210 dtb=0.238116
-[2025-01-03 09:58:09.893997][INFO][fsdp_tp.py:227] - iter=7 loss=10.633245 dt=0.398598 dtf=0.160773 dtb=0.237825
-[2025-01-03 09:58:09.894818][INFO][fsdp_tp.py:238] - Finished 2D training
-[2025-01-03 09:58:11.014390][INFO][history.py:723] - Saving iter plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/mplot
-[2025-01-03 09:58:11.503575][INFO][history.py:723] - Saving loss plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/mplot
-[2025-01-03 09:58:11.734301][INFO][history.py:723] - Saving dt plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/mplot
-[2025-01-03 09:58:11.962392][INFO][history.py:723] - Saving dtf plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/mplot
-[2025-01-03 09:58:12.191307][INFO][history.py:723] - Saving dtb plot to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/mplot
-[2025-01-03 09:58:12.403876][INFO][history.py:603] - Saving tplots to /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/tplot
-                           iter [2025-01-03-095812]
-   ┌──────────────────────────────────────────────────────────────────────┐
-7.0┤                                                                   ▗▄▞│
-   │                                                               ▗▄▞▀▘  │
-   │                                                           ▗▄▞▀▘      │
-5.8┤                                                       ▗▄▞▀▘          │
-   │                                                   ▗▄▞▀▘              │
-   │                                               ▗▄▞▀▘                  │
-4.7┤                                           ▗▄▞▀▘                      │
-   │                                       ▗▄▞▀▘                          │
-3.5┤                                    ▄▄▀▘                              │
-   │                                ▄▄▀▀                                  │
-   │                            ▄▄▀▀                                      │
-2.3┤                        ▄▄▀▀                                          │
-   │                    ▄▄▀▀                                              │
-   │                ▄▄▀▀                                                  │
-1.2┤            ▄▄▀▀                                                      │
-   │        ▄▄▀▀                                                          │
-   │    ▄▄▀▀                                                              │
-0.0┤▄▄▀▀                                                                  │
-   └┬─────────┬─────────┬─────────┬────────┬─────────┬─────────┬──────────┘
-    1         2         3         4        5         6         7
-iter
-text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/tplot/iter.txt
-                            loss [2025-01-03-095812]
-      ┌───────────────────────────────────────────────────────────────────┐
-10.863┤▚▄                                                                 │
-      │  ▀▀▄▄                                                             │
-      │      ▀▀▄▄                                                         │
-10.825┤          ▀▄▖                                                      │
-      │            ▝▀▄                                                    │
-      │               ▀▚▄                                                 │
-10.786┤                  ▀▚▄▖                                             │
-      │                     ▝▀▀▄▄▖                                        │
-10.748┤                          ▝▀▀▄                                     │
-      │                              ▀▄▖                                  │
-      │                                ▝▚▖          ▗▄▞▄▖                 │
-10.710┤                                  ▝▀▄   ▗▄▄▀▀▘   ▝▀▚▄▖             │
-      │                                     ▀▀▀▘            ▝▀▚▄▖         │
-      │                                                         ▝▄        │
-10.672┤                                                           ▀▄      │
-      │                                                             ▀▄    │
-      │                                                               ▀▄  │
-10.633┤                                                                 ▀▄│
-      └┬────────┬─────────┬────────┬─────────┬────────┬─────────┬─────────┘
-       1        2         3        4         5        6         7
-loss
-text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/tplot/loss.txt
-                            dt [2025-01-03-095812]
-    ┌─────────────────────────────────────────────────────────────────────┐
-12.1┤▌                                                                    │
-    │▐                                                                    │
-    │ ▌                                                                   │
-10.1┤ ▝▖                                                                  │
-    │  ▚                                                                  │
-    │  ▝▖                                                                 │
- 8.2┤   ▚                                                                 │
-    │    ▌                                                                │
- 6.2┤    ▐                                                                │
-    │     ▌                                                               │
-    │     ▝▖                                                              │
- 4.3┤      ▚                                                              │
-    │      ▝▖                                                             │
-    │       ▚                                                             │
- 2.3┤        ▌                                                            │
-    │        ▐                                                            │
-    │         ▌                                                           │
- 0.4┤         ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
-    └┬─────────┬────────┬─────────┬─────────┬─────────┬────────┬──────────┘
-     1         2        3         4         5         6        7
-dt
-text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/tplot/dt.txt
-                            dtf [2025-01-03-095812]
-    ┌─────────────────────────────────────────────────────────────────────┐
-11.6┤▌                                                                    │
-    │▐                                                                    │
-    │ ▌                                                                   │
- 9.7┤ ▝▖                                                                  │
-    │  ▚                                                                  │
-    │  ▝▖                                                                 │
- 7.8┤   ▚                                                                 │
-    │    ▌                                                                │
- 5.9┤    ▐                                                                │
-    │     ▌                                                               │
-    │     ▝▖                                                              │
- 4.0┤      ▚                                                              │
-    │      ▝▖                                                             │
-    │       ▚                                                             │
- 2.1┤        ▌                                                            │
-    │        ▐                                                            │
-    │         ▌                                                           │
- 0.2┤         ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
-    └┬─────────┬────────┬─────────┬─────────┬─────────┬────────┬──────────┘
-     1         2        3         4         5         6        7
-dtf
-text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/tplot/dtf.txt
-                             dtb [2025-01-03-095812]
-     ┌────────────────────────────────────────────────────────────────────┐
-0.527┤▌                                                                   │
-     │▐                                                                   │
-     │ ▌                                                                  │
-0.478┤ ▐                                                                  │
-     │  ▚                                                                 │
-     │  ▝▖                                                                │
-0.430┤   ▚                                                                │
-     │   ▝▖                                                               │
-0.382┤    ▚                                                               │
-     │     ▌                                                              │
-     │     ▐                                                              │
-0.334┤      ▌                                                             │
-     │      ▐                                                             │
-     │       ▚                                                            │
-0.286┤       ▝▖                                                           │
-     │        ▚                                                           │
-     │        ▝▖                                                          │
-0.238┤         ▝▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
-     └┬─────────┬────────┬─────────┬────────┬─────────┬────────┬──────────┘
-      1         2        3         4        5         6        7
-dtb
-text saved in /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/plots/tplot/dtb.txt
-[2025-01-03 09:58:12.981346][INFO][utils.py:132] - Saving dataset to: /lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/outputs/mmm-fsdp-tp/train_dataset.h5
-[2025-01-03 09:58:13.054512][INFO][fsdp_tp.py:243] - dataset=<xarray.Dataset> Size: 384B
-Dimensions:  (draw: 8)
-Coordinates:
-  * draw     (draw) int64 64B 0 1 2 3 4 5 6 7
-Data variables:
-    iter     (draw) int64 64B 0 1 2 3 4 5 6 7
-    loss     (draw) float64 64B 10.86 10.83 10.78 10.76 10.7 10.73 10.7 10.63
-    dt       (draw) float64 64B 12.09 0.4056 0.4009 ... 0.3994 0.3983 0.3986
-    dtf      (draw) float64 64B 11.56 0.1616 0.1621 ... 0.1599 0.1602 0.1608
-    dtb      (draw) float64 64B 0.5266 0.244 0.2388 ... 0.2395 0.2381 0.2378
-Application 15ace429 resources: utime=1612s stime=434s maxrss=2901172KB inblock=777320 oublock=1488 minflt=15879731 majflt=23706 nvcsw=929293 nivcsw=2432655
-took: 0h:00m:39s
+[2025-02-02 15:26:31][I][examples/fsdp_tp:196:__main__] Creating optimizer=AdamW with lr=5e-05
+[2025-02-02 15:26:31][I][examples/fsdp_tp:245:__main__] Starting 2D training...
+[2025-02-02 15:28:55][I][examples/fsdp_tp:281:__main__] epoch=0 iter=0 loss=10.852120 dt=37.205128 dtf=30.174712 dtb=7.030416
+[2025-02-02 15:28:55][I][examples/fsdp_tp:294:__main__] inp.shape=torch.Size([4, 2048])
+[2025-02-02 15:28:59][I][examples/fsdp_tp:281:__main__] epoch=0 iter=1 loss=10.844956 dt=4.255044 dtf=0.894840 dtb=3.360204
+[2025-02-02 15:29:03][I][examples/fsdp_tp:281:__main__] epoch=0 iter=2 loss=10.852772 dt=4.236974 dtf=1.022428 dtb=3.214546
+[2025-02-02 15:29:08][I][examples/fsdp_tp:281:__main__] epoch=0 iter=3 loss=10.845860 dt=4.306954 dtf=1.042703 dtb=3.264251
+[2025-02-02 15:29:12][I][examples/fsdp_tp:281:__main__] epoch=0 iter=4 loss=10.847977 dt=4.324451 dtf=1.043026 dtb=3.281424
+[2025-02-02 15:29:16][I][examples/fsdp_tp:281:__main__] epoch=0 iter=5 loss=10.861067 dt=4.322672 dtf=1.049985 dtb=3.272688
+[2025-02-02 15:29:21][I][examples/fsdp_tp:281:__main__] epoch=0 iter=6 loss=10.875711 dt=4.268926 dtf=1.038222 dtb=3.230704
+[2025-02-02 15:29:25][I][examples/fsdp_tp:281:__main__] epoch=0 iter=7 loss=10.871173 dt=4.311684 dtf=1.041232 dtb=3.270452
+[2025-02-02 15:29:29][I][examples/fsdp_tp:281:__main__] epoch=0 iter=8 loss=10.860594 dt=4.271564 dtf=1.032435 dtb=3.239130
+[2025-02-02 15:29:34][I][examples/fsdp_tp:281:__main__] epoch=0 iter=9 loss=10.863268 dt=4.330087 dtf=1.058527 dtb=3.271560
+[2025-02-02 15:29:38][I][examples/fsdp_tp:281:__main__] epoch=0 iter=10 loss=10.865101 dt=4.256579 dtf=1.028928 dtb=3.227651
 ```
 
 </details>
+
+<details closed><summary>Polaris @ ALCF:</summary>
+
+```python
+launch python3 -Wignore -m mmm.train --job.config_file train_configs/debug_model.toml
+#[01:57:26 PM][x3002c0s25b1n0][/e/a/f/p/s/mmm][🌱 main][🤷✓] [⏱️ 1m14s]
+; launch python3 -m mmm.examples.fsdp_tp --tp 4 --epochs 5 --batch-size 4 --dim=4096
+Connected to tcp://x3002c0s13b0n0.hsn.cm.polaris.alcf.anl.gov:7919
+Found executable /lus/eagle/projects/argonne_tpc/foremans/projects/saforem2/mmm/venvs/2024-04-29/bin/python3
+Launching application a1bd5be5-8971-4601-9352-acef885601d6
+Using PMI port 36863,36864
+[2025-02-01 13:57:40][I][datasets/config:58:datasets] PyTorch version 2.3.0 available.
+[2025-02-01 13:57:40][I][datasets/config:105:datasets] TensorFlow version 2.16.1 available.
+[2025-02-01 13:57:40][I][datasets/config:118:datasets] JAX version 0.4.26 available.
+[2025-02-01 13:57:40][I][tp/__init__:146:ezpz.tp] > initializing tensor parallel with size 4
+[2025-02-01 13:57:40][I][tp/__init__:151:ezpz.tp] > initializing context parallel with size 1
+[2025-02-01 13:57:40][I][tp/__init__:156:ezpz.tp] > initializing pipeline with size 1
+[2025-02-01 13:57:40][I][tp/__init__:159:ezpz.tp] > initializing ddp with size 8
+[2025-02-01 13:57:42][I][ezpz/dist:823] Using device='cuda' with backend='DDP' + 'nccl' for distributed training.
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b0n0'][ 3/31] [tp:3/3][dp:0/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b1n0'][ 7/31] [tp:3/3][dp:1/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b0n0'][19/31] [tp:3/3][dp:4/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b0n0'][11/31] [tp:3/3][dp:2/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b0n0'][27/31] [tp:3/3][dp:6/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b1n0'][23/31] [tp:3/3][dp:5/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b1n0'][31/31] [tp:3/3][dp:7/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b1n0'][15/31] [tp:3/3][dp:3/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b0n0'][17/31] [tp:1/3][dp:4/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b0n0'][ 1/31] [tp:1/3][dp:0/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b0n0'][ 9/31] [tp:1/3][dp:2/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b0n0'][25/31] [tp:1/3][dp:6/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b1n0'][13/31] [tp:1/3][dp:3/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b1n0'][29/31] [tp:1/3][dp:7/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b1n0'][21/31] [tp:1/3][dp:5/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b1n0'][ 5/31] [tp:1/3][dp:1/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b0n0'][ 8/31] [tp:0/3][dp:2/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b0n0'][24/31] [tp:0/3][dp:6/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b1n0'][20/31] [tp:0/3][dp:5/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b1n0'][ 4/31] [tp:0/3][dp:1/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b1n0'][28/31] [tp:0/3][dp:7/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b1n0'][12/31] [tp:0/3][dp:3/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b0n0'][ 2/31] [tp:2/3][dp:0/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b1n0'][30/31] [tp:2/3][dp:7/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b0n0'][18/31] [tp:2/3][dp:4/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b0n0'][ 0/31] [tp:0/3][dp:0/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b0n0'][16/31] [tp:0/3][dp:4/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b1n0'][14/31] [tp:2/3][dp:3/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s13b1n0'][ 6/31] [tp:2/3][dp:1/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s1b1n0'][22/31] [tp:2/3][dp:5/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s19b0n0'][10/31] [tp:2/3][dp:2/7]
+[2025-02-01 13:57:44][I][ezpz/dist:869] ['x3002c0s25b0n0'][26/31] [tp:2/3][dp:6/7]
+[2025-02-01 13:57:44][I][examples/fsdp_tp:177:__main__] Device mesh created:
+device_mesh=DeviceMesh([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23], [24, 25, 26, 27], [28, 29, 30, 31]], mesh_dim_names=('dp', 'tp'))
+[2025-02-01 13:57:44][I][examples/fsdp_tp:187:__main__] config:
+ModelArgs(dim=4096, n_layers=32, n_heads=32, n_kv_heads=4, vocab_size=32000, multiple_of=360, ffn_dim_multiplier=None, norm_eps=1e-05, max_batch_size=32, max_seq_len=32768, depth_init=True)
+[2025-02-01 13:58:29][I][examples/fsdp_tp:191:__main__]
+=================================================================
+Layer (type:depth-idx)                   Param #
+=================================================================
+Transformer                              --
+├─Embedding: 1-1                         131,072,000
+├─ModuleList: 1-2                        --
+│    └─TransformerBlock: 2-1             174,891,008
+│    └─TransformerBlock: 2-2             174,891,008
+│    └─TransformerBlock: 2-3             174,891,008
+│    └─TransformerBlock: 2-4             174,891,008
+│    └─TransformerBlock: 2-5             174,891,008
+│    └─TransformerBlock: 2-6             174,891,008
+│    └─TransformerBlock: 2-7             174,891,008
+│    └─TransformerBlock: 2-8             174,891,008
+│    └─TransformerBlock: 2-9             174,891,008
+│    └─TransformerBlock: 2-10            174,891,008
+│    └─TransformerBlock: 2-11            174,891,008
+│    └─TransformerBlock: 2-12            174,891,008
+│    └─TransformerBlock: 2-13            174,891,008
+│    └─TransformerBlock: 2-14            174,891,008
+│    └─TransformerBlock: 2-15            174,891,008
+│    └─TransformerBlock: 2-16            174,891,008
+│    └─TransformerBlock: 2-17            174,891,008
+│    └─TransformerBlock: 2-18            174,891,008
+│    └─TransformerBlock: 2-19            174,891,008
+│    └─TransformerBlock: 2-20            174,891,008
+│    └─TransformerBlock: 2-21            174,891,008
+│    └─TransformerBlock: 2-22            174,891,008
+│    └─TransformerBlock: 2-23            174,891,008
+│    └─TransformerBlock: 2-24            174,891,008
+│    └─TransformerBlock: 2-25            174,891,008
+│    └─TransformerBlock: 2-26            174,891,008
+│    └─TransformerBlock: 2-27            174,891,008
+│    └─TransformerBlock: 2-28            174,891,008
+│    └─TransformerBlock: 2-29            174,891,008
+│    └─TransformerBlock: 2-30            174,891,008
+│    └─TransformerBlock: 2-31            174,891,008
+│    └─TransformerBlock: 2-32            174,891,008
+├─RMSNorm: 1-3                           4,096
+├─Linear: 1-4                            131,072,000
+=================================================================
+Total params: 5,858,660,352
+Trainable params: 5,858,660,352
+Non-trainable params: 0
+=================================================================
+[2025-02-01 13:58:33][I][examples/fsdp_tp:163:__main__] Model after parallelization:
+sharded_model=FullyShardedDataParallel(
+  (_fsdp_wrapped_module): Transformer(
+    (tok_embeddings): Embedding(32000, 4096)
+    (layers): ModuleList(
+      (0-31): 32 x TransformerBlock(
+        (attention): Attention(
+          (wq): Linear(in_features=4096, out_features=4096, bias=False)
+          (wk): Linear(in_features=4096, out_features=512, bias=False)
+          (wv): Linear(in_features=4096, out_features=512, bias=False)
+          (wo): Linear(in_features=4096, out_features=4096, bias=False)
+        )
+        (feed_forward): FeedForward(
+          (w1): Linear(in_features=4096, out_features=11160, bias=False)
+          (w2): Linear(in_features=11160, out_features=4096, bias=False)
+          (w3): Linear(in_features=4096, out_features=11160, bias=False)
+        )
+        (attention_norm): RMSNorm()
+        (ffn_norm): RMSNorm()
+      )
+    )
+    (norm): RMSNorm()
+    (output): Linear(in_features=4096, out_features=32000, bias=False)
+  )
+)
+
+[2025-02-01 13:58:33][I][examples/fsdp_tp:196:__main__] Creating optimizer=AdamW with lr=0.003
+[2025-02-01 13:58:33][I][examples/fsdp_tp:245:__main__] Starting 2D training...
+[2025-02-01 13:58:43][I][examples/fsdp_tp:281:__main__] epoch=0 iter=0 loss=10.831984 dt=9.846861 dtf=5.257388 dtb=4.589474
+[2025-02-01 13:58:43][I][examples/fsdp_tp:294:__main__] inp.shape=torch.Size([4, 2048])
+[2025-02-01 13:58:50][I][examples/fsdp_tp:281:__main__] epoch=0 iter=1 loss=14.379510 dt=3.133007 dtf=2.497247 dtb=0.635759
+[2025-02-01 13:58:57][I][examples/fsdp_tp:281:__main__] epoch=0 iter=2 loss=12.807954 dt=3.584346 dtf=2.438942 dtb=1.145403
+ [2025-02-01 13:59:04][I][examples/fsdp_tp:281:__main__] epoch=0 iter=3 loss=14.743041 dt=3.174036 dtf=2.150096 dtb=1.023941
+[2025-02-01 13:59:12][I][examples/fsdp_tp:281:__main__] epoch=0 iter=4 loss=17.754011 dt=4.312059 dtf=2.639566 dtb=1.672493
+[2025-02-01 13:59:20][I][examples/fsdp_tp:281:__main__] epoch=0 iter=5 loss=20.464378 dt=3.201004 dtf=2.256773 dtb=0.944231
+[2025-02-01 13:59:28][I][examples/fsdp_tp:281:__main__] epoch=0 iter=6 loss=24.087290 dt=4.283923 dtf=2.834405 dtb=1.449518
+[2025-02-01 13:59:35][I][examples/fsdp_tp:281:__main__] epoch=0 iter=7 loss=25.551876 dt=3.148789 dtf=2.362422 dtb=0.786367
+[2025-02-01 13:59:43][I][examples/fsdp_tp:281:__main__] epoch=0 iter=8 loss=26.223629 dt=4.989230 dtf=3.239145 dtb=1.750085
+[2025-02-01 13:59:51][I][examples/fsdp_tp:281:__main__] epoch=0 iter=9 loss=24.683023 dt=3.376321 dtf=2.469399 dtb=0.906922
+[2025-02-01 13:59:59][I][examples/fsdp_tp:281:__main__] epoch=0 iter=10 loss=22.594797 dt=4.572377 dtf=2.899021 dtb=1.673356
+[2025-02-01 14:00:07][I][examples/fsdp_tp:281:__main__] epoch=0 iter=11 loss=20.575119 dt=3.941751 dtf=2.874172 dtb=1.067579
+[2025-02-01 14:00:15][I][examples/fsdp_tp:281:__main__] epoch=0 iter=12 loss=20.123554 dt=4.221992 dtf=3.029075 dtb=1.192917
+[2025-02-01 14:00:23][I][examples/fsdp_tp:281:__main__] epoch=0 iter=13 loss=26.296919 dt=3.415069 dtf=2.524659 dtb=0.890410
+[2025-02-01 14:00:32][I][examples/fsdp_tp:281:__main__] epoch=0 iter=14 loss=27.970491 dt=4.739544 dtf=2.963098 dtb=1.776446
+[2025-02-01 14:00:39][I][examples/fsdp_tp:281:__main__] epoch=0 iter=15 loss=20.901236 dt=3.166723 dtf=2.169875 dtb=0.996849
+[2025-02-01 14:00:47][I][examples/fsdp_tp:281:__main__] epoch=0 iter=16 loss=21.884733 dt=4.412706 dtf=2.337634 dtb=2.075072
+[2025-02-01 14:00:55][I][examples/fsdp_tp:281:__main__] epoch=0 iter=17 loss=24.030357 dt=3.159311 dtf=2.286639 dtb=0.872672
+[2025-02-01 14:01:03][I][examples/fsdp_tp:281:__main__] epoch=0 iter=18 loss=27.559183 dt=4.385118 dtf=2.503596 dtb=1.881523
+[2025-02-01 14:01:11][I][examples/fsdp_tp:281:__main__] epoch=0 iter=19 loss=29.530497 dt=3.034728 dtf=2.087179 dtb=0.947550
+[2025-02-01 14:01:19][I][examples/fsdp_tp:281:__main__] epoch=0 iter=20 loss=31.549356 dt=4.096217 dtf=2.819700 dtb=1.276518
+[2025-02-01 14:01:27][I][examples/fsdp_tp:281:__main__] epoch=0 iter=21 loss=34.394360 dt=3.153647 dtf=2.353484 dtb=0.800163
+[2025-02-01 14:01:35][I][examples/fsdp_tp:281:__main__] epoch=0 iter=22 loss=35.246937 dt=4.501455 dtf=2.857567 dtb=1.643888
+[2025-02-01 14:01:43][I][examples/fsdp_tp:281:__main__] epoch=0 iter=23 loss=36.298687 dt=3.637440 dtf=2.376551 dtb=1.260889
+[2025-02-01 14:01:51][I][examples/fsdp_tp:281:__main__] epoch=0 iter=24 loss=39.277588 dt=4.178340 dtf=2.414844 dtb=1.763496
+[2025-02-01 14:01:59][I][examples/fsdp_tp:281:__main__] epoch=0 iter=25 loss=40.016758 dt=3.294702 dtf=2.437459 dtb=0.857243
+```
+
+</details>
+
 
 </details>
 
