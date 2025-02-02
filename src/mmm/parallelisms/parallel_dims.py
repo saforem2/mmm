@@ -46,25 +46,25 @@ class ParallelDims:
             self.pp,
         )
         for d in (dp_replicate, cp, tp, pp):
-            assert (
-                d >= 1
-            ), 'Parallelism degree should be >= 1, except for dp_shard'
+            assert d >= 1, (
+                'Parallelism degree should be >= 1, except for dp_shard'
+            )
         assert dp_shard == -1 or dp_shard >= 1, 'dp_shard should be -1 or >= 1'
         if dp_shard < 0:
             self.dp_shard = dp_shard = self.world_size // (
                 dp_replicate * cp * tp * pp
             )
         assert dp_shard >= 1
-        assert (
-            dp_replicate * dp_shard * cp * tp * pp == self.world_size
-        ), ' '.join(
-            [
-                'Invalid parallel dims:',
-                f'dp_replicate({dp_replicate})',
-                f'* dp_shard({dp_shard})',
-                f'* cp({cp}) * tp({tp}) * pp({pp})',
-                f'!= world_size({self.world_size})',
-            ]
+        assert dp_replicate * dp_shard * cp * tp * pp == self.world_size, (
+            ' '.join(
+                [
+                    'Invalid parallel dims:',
+                    f'dp_replicate({dp_replicate})',
+                    f'* dp_shard({dp_shard})',
+                    f'* cp({cp}) * tp({tp}) * pp({pp})',
+                    f'!= world_size({self.world_size})',
+                ]
+            )
         )
 
     def build_mesh(self, device_type):
@@ -79,9 +79,7 @@ class ParallelDims:
                 names.append(name)
         logger.info(f'Building {len(dims)}-D device mesh with {names}, {dims}')
         names = tuple(names)
-        mesh = init_device_mesh(
-            device_type, dims, mesh_dim_names=names
-        )
+        mesh = init_device_mesh(device_type, dims, mesh_dim_names=names)
         # Create all the submesh here to ensure all required process groups are initialized:
         # Mesh for data loading (no communication on this mesh)
         dp_mesh_dim_names = []
@@ -101,50 +99,13 @@ class ParallelDims:
             dp_cp_mesh_dim_names.append('cp')
 
         if dp_mesh_dim_names != []:
-            # try:
-            mesh[tuple(dp_mesh_dim_names)]._flatten(mesh_dim_name="dp")
-            # except:
-            #     from ezpz.utils import breakpoint
-            #     breakpoint(0)
+            mesh[tuple(dp_mesh_dim_names)]._flatten(mesh_dim_name='dp')
         if dp_shard_cp_mesh_dim_names != []:
-            # try:
             mesh[tuple(dp_shard_cp_mesh_dim_names)]._flatten(
-                mesh_dim_name="dp_shard_cp"
+                mesh_dim_name='dp_shard_cp'
             )
-            # except Exception:
-            #     pass
         if dp_cp_mesh_dim_names != []:
-            # try:
-            mesh[tuple(dp_cp_mesh_dim_names)]._flatten(mesh_dim_name="dp_cp")
-            # except Exception:
-            #     pass
-
-        # if dp_mesh_dim_names != []:
-        #     try:
-        #         for dp_mesh_dim_name in dp_mesh_dim_names:
-        #             mesh[dp_mesh_dim_name]._flatten(
-        #                 mesh_dim_name='dp'
-        #             )
-        #     except Exception:
-        #     from ezpz.utils import breakpoint
-        #     breakpoint(0)
-        #     # assert len(dp_mesh_dim_names) > 0
-        #     # try:
-        #     #     mesh[dp_mesh_dim_names]._flatten(  # type:ignore
-        #     #         mesh_dim_name='dp_shard'
-        #     #     )
-        #     # except Exception:
-        #     #     from ezpz.utils import breakpoint
-        #     #     breakpoint(0)
-        #
-        # if dp_shard_cp_mesh_dim_names != []:
-        #     mesh[dp_shard_cp_mesh_dim_names]._flatten(  # type:ignore
-        #         mesh_dim_name='dp_shard_cp'
-        #     )
-        # if dp_cp_mesh_dim_names != []:
-        #     mesh[dp_cp_mesh_dim_names]._flatten(  # type:ignore
-        #         mesh_dim_name='dp_cp'
-        #     )
+            mesh[tuple(dp_cp_mesh_dim_names)]._flatten(mesh_dim_name='dp_cp')
 
         return mesh
 
@@ -181,7 +142,6 @@ class ParallelDims:
         return self.cp * self.tp * self.pp
 
 
-
 @dataclass
 class ParallelDimsOld:
     dp_replicate: int
@@ -211,8 +171,10 @@ class ParallelDimsOld:
             self.pp,
         )
         for d in (dp_replicate, cp, tp, pp):
-            assert d >= 1, "Parallelism degree should be >= 1, except for dp_shard"
-        assert dp_shard == -1 or dp_shard >= 1, " dp_shard must -1 or >=1."
+            assert d >= 1, (
+                'Parallelism degree should be >= 1, except for dp_shard'
+            )
+        assert dp_shard == -1 or dp_shard >= 1, ' dp_shard must -1 or >=1.'
 
         dp = dp_replicate * dp_shard
         if dp < 0:
@@ -225,8 +187,8 @@ class ParallelDimsOld:
         assert cp >= 1, cp
         assert pp >= 1, pp
         assert dp_replicate * dp_shard * cp * tp * pp == self.world_size, (
-            f"Invalid parallel dims: dp_replicate({dp_replicate}) * dp_shard({dp_shard}) * "
-            f"cp({cp}) * tp({tp}) * pp({pp}) != WORLD_SIZE({self.world_size})"
+            f'Invalid parallel dims: dp_replicate({dp_replicate}) * dp_shard({dp_shard}) * '
+            f'cp({cp}) * tp({tp}) * pp({pp}) != WORLD_SIZE({self.world_size})'
         )
 
     def build_mesh(self, device_type):
@@ -234,30 +196,32 @@ class ParallelDimsOld:
         names = []
         for d, name in zip(
             [self.pp, self.dp_replicate, self.dp_shard, self.cp, self.tp],
-            ["pp", "dp_replicate", "dp_shard", "cp", "tp"],
+            ['pp', 'dp_replicate', 'dp_shard', 'cp', 'tp'],
         ):
             if d > 1:
                 dims.append(d)
-                if (name == "dp_replicate" and self.dp_shard == 1) or (
-                    name == "dp_shard" and self.dp_replicate == 1
+                if (name == 'dp_replicate' and self.dp_shard == 1) or (
+                    name == 'dp_shard' and self.dp_replicate == 1
                 ):
-                    names.append("dp")
+                    names.append('dp')
                 else:
                     names.append(name)
 
-        logger.info(f"Building {len(dims)}-D device mesh with {names}, {dims}")
+        logger.info(f'Building {len(dims)}-D device mesh with {names}, {dims}')
         names = tuple(names)
         mesh = init_device_mesh(device_type, dims, mesh_dim_names=names)
         # Create all the submesh here to ensure all required process groups are
         # initialized
         if self.dp_replicate > 1 and self.dp_shard > 1:
-            mesh["dp_replicate", "dp_shard"]._flatten(mesh_dim_name="dp")
+            mesh['dp_replicate', 'dp_shard']._flatten(mesh_dim_name='dp')
 
         if self.cp > 1:
             if self.dp_replicate > 1 and self.dp_shard > 1:
-                mesh["dp_replicate", "dp_shard", "cp"]._flatten(mesh_dim_name="dp_cp")
+                mesh['dp_replicate', 'dp_shard', 'cp']._flatten(
+                    mesh_dim_name='dp_cp'
+                )
             else:
-                mesh["dp", "cp"]._flatten(mesh_dim_name="dp_cp")
+                mesh['dp', 'cp']._flatten(mesh_dim_name='dp_cp')
         return mesh
 
     @property
