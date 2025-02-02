@@ -2,28 +2,48 @@
 
 ## 🐣 Getting Started
 
-### 🏡 Setup Environment
+### 🐍 Setup Environment
 
-- 🍋 We use [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
-  for setting up, launching, and orchestrating our distributed training.
+We use [🍋 saforem2 / `ezpz`](https://github.com/saforem2/ezpz)
+for **setting up**, **launching**, and **orchestrating** our distributed training.
 
-  In particular, we can use the `ezpz_setup_env` helper function from
-  [`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh):
+To setup our environment, we first `source` the
+[`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh)
+script.
 
-  ```bash
-  source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
-  ezpz_setup_env
-  ```
+This populates the shell environment with a variety of useful functions for
+setting up a python environment and determining the specifics of 
+our currently running job (e.g. number of nodes, number of GPUs per node, etc.).
 
-- 🪄 This will, _automagically_:
+In particular, we can use the `ezpz_setup_env` helper function[^ezpz_setup_env]
+to automatically take care of all of our required environment setup:
 
-  - Setup + activate python environment
-  - Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
-  - Define a `launch` alias to launch our application across them
+```bash
+source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
+ezpz_setup_env
+```
 
-  For additional information, see [`ezpz`](https://github.com/saforem2/ezpz).
+🪄 This will, _automagically_:
 
-**Note**: This is _technically_ optional, but highly recommended as it will allow you to automatically launch on any[^any] distributed setup with a compatible MPI.
+- Setup + activate python environment
+- Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
+- Define a `launch` alias to launch our application across them
+
+> For additional information, see [`ezpz`](https://github.com/saforem2/ezpz).
+
+[^ezpz_setup_env]:
+    Technically, it just chains together two separate (and useful on their own) function calls, explicitly:
+    
+    ```bash
+    $ which ezpz_setup_env
+    ezpz_setup_env() {
+       ezpz_setup_python && ezpz_setup_job
+    }
+    ```
+
+> [!NOTE]
+> This is _technically_ optional, but highly recommended as it will allow
+> you to automatically launch on any[^any] distributed setup with a compatible MPI.
 
 [^any]: This has been tested and confirmed to work on:
 
@@ -36,22 +56,32 @@
     
     Both PBS and Slurm job schedulers are supported and the specifics of the running job will be used to populate the corresponding `launch` command.
 
-### 📦 Install
+### ⬇️ Install
 
-From local clone (**recommended**):
+Armed with a functional python installation, we can install `mmm`.
 
-```bash
-git clone https://github.com/saforem2/mmm
-python3 -m pip install -e mmm
-```
+- From GitHub:
 
-<details><summary>From git:</summary>
+  ```bash
+  python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
+  ```
 
-```bash
-python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
-```
+- <details closed><summary>From local clone (development)</summary>
 
-</details>
+  ```bash
+  git clone https://github.com/saforem2/mmm
+  python3 -m pip install -e mmm
+  ```
+
+  </details>
+
+- <details closed><summary>Using `uv`</summary>
+
+  ```bash
+  uv pip install "mmm @ git+https://github.com/saforem2/mmm"
+  ```
+
+  </details>
 
 ## 📊 Examples
 
@@ -206,7 +236,7 @@ sharded_model=FullyShardedDataParallel(
 <details closed><summary>Polaris @ ALCF:</summary>
 
 ```python
-launch python3 -Wignore -m mmm.train --job.config_file train_configs/debug_model.toml
+# launch python3 -Wignore -m mmm.train --job.config_file train_configs/debug_model.toml
 #[01:57:26 PM][x3002c0s25b1n0][/e/a/f/p/s/mmm][🌱 main][🤷✓] [⏱️ 1m14s]
 ; launch python3 -m mmm.examples.fsdp_tp --tp 4 --epochs 5 --batch-size 4 --dim=4096
 Connected to tcp://x3002c0s13b0n0.hsn.cm.polaris.alcf.anl.gov:7919
