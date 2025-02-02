@@ -6,35 +6,35 @@
 
 # This file applies the PT-D parallelisms (except pipeline parallelism) and various
 # training techniques (e.g. activation checkpointing and compile) to the Llama model.
-"""
-mmm/parallelisms/parallel_dims.py
-
-Modified from:
-<https://github.com/pytorch/torchtitan/blob/2a4437014e66bcf88a3f0419b816266e6326d539/torchtitan/parallelisms/parallelize_llama.py>
-"""
 
 from collections import defaultdict
-# from types import prepare_class
+
 
 import ezpz
 import torch
 import torch.nn as nn
 
-
-from torch.distributed.device_mesh import DeviceMesh
-from torch.distributed._composable.fsdp.fully_shard import fully_shard
-from torch.distributed._composable.fsdp._fsdp_api import MixedPrecisionPolicy
-#     import (
-#     CPUOffloadPolicy,
-#     fully_shard,
-#     MixedPrecisionPolicy,
-# )
-
+from torch.distributed import DeviceMesh
+from torch.distributed._composable.fsdp import (
+    CPUOffloadPolicy,
+    fully_shard,
+    MixedPrecisionPolicy,
+)
 from torch.distributed._composable.replicate import replicate
 from torch.distributed._tensor import Replicate, Shard
 from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
     checkpoint_wrapper as ptd_checkpoint_wrapper,
 )
+from torch.distributed.tensor.parallel import (
+    ColwiseParallel,
+    parallelize_module,
+    PrepareModuleInput,
+    RowwiseParallel,
+    SequenceParallel,
+)
+
+#from torchtitan.config_manager import JobConfig, TORCH_DTYPE_MAP
+#from torchtitan.parallelismsrequire"cmp.utils.feedkeys".run(2)
 
 from mmm.configs import TORCH_DTYPES_MAP, JobConfig
 
@@ -46,19 +46,10 @@ from mmm.configs import TORCH_DTYPES_MAP, JobConfig
 #     RowwiseParallel,
 #     SequenceParallel,
 # )
-from torch.distributed.tensor.parallel import (
-    ColwiseParallel,
-    PrepareModuleInput,
-    RowwiseParallel,
-    SequenceParallel,
-    parallelize_module,
-)
-
 from mmm.parallelisms.parallel_dims import ParallelDims
 
 
 logger = ezpz.get_logger(__name__)
-
 
 def parallelize_llama(
     model: nn.Module,
@@ -67,72 +58,69 @@ def parallelize_llama(
     job_config: JobConfig,
 ):
     """
-    Apply tensor parallelism, activation checkpointing, torch.compile, and
-    data parallelism to the model.
+    Apply tensor parallelism, activation checkpointing, torch.compile, and data
+    parallelism to the model.
 
-    NOTE: The passed-in model preferably should be on meta device.
-    Otherwise, the model must fit in GPU or CPU memory.
+    NOTE: The passed-in model preferably should be on meta device. Otherwise,
+    the model must fit on GPU or CPU memory.
     """
+
     if parallel_dims.tp_enabled:
         if (
             job_config.experimental.enable_async_tensor_parallel
             and not job_config.training.compile
         ):
-            raise RuntimeError('Async TP requires --training.compile')
+            raise RuntimeError("Async TP requires --training.compile")
         apply_tp(
             model,
-            world_mesh['tp'],
-            loss_parallel=parallel_dims.enable_loss_parallel,
+            world_mesh["tp"],
+            loss_parallel=parallel_dims.loss_parallel_enabled,
             enable_float8=job_config.float8.enable_float8_linear,
             enable_async_tp=job_config.experimental.enable_async_tensor_parallel,
         )
 
-    if job_config.activation_checkpoint.mode != 'none':
+    if job_config.activation_checkpoint.mode != "none":
         apply_ac(model, job_config.activation_checkpoint)
 
-    #  turn on per-TransformerBlock compile after AC wrapping and before FSDP
+    # turn on per-TransformerBlock compile after AC wrapping and before FSDP
     if job_config.training.compile:
-        if job_config.model.norm_type == 'fused_rmsnorm':
+        if job_config.model.norm_type == "fused_rmsnorm":
             raise NotImplementedError(
-                'fused_rmsnorm is not compatible with torch.compile yet. '
-                'Please use rmsnorm or layernorm.'
+                "fused_rmsnorm is not compatible with torch.compile yet. "
+                "Please use rmsnorm or layernorm."
             )
         apply_compile(model)
 
     if (
         parallel_dims.dp_shard_enabled or parallel_dims.cp_enabled
-    ):  # Apply FSDP or HSDP, potentially with Context Parallel
+    ):  # apply FSDP or HSDP, potentially with Context Parallel
         if parallel_dims.dp_replicate_enabled:
-            dp_mesh_dim_names = ('dp_replicate', 'dp_shard_cp')
+            dp_mesh_dim_names = ("dp_replicate", "dp_shard_cp")
         else:
-            dp_mesh_dim_names = ('dp_shard_cp',)
-        # _mesh = world_mesh[dp_mesh_dim_names[0]
+            dp_mesh_dim_names = ("dp_shard_cp",)
+
         apply_fsdp(
             model,
             world_mesh[tuple(dp_mesh_dim_names)],
-            param_dtype=TORCH_DTYPES_MAP[
-                job_config.training.mixed_precision_param
-            ],
-            reduce_dtype=TORCH_DTYPES_MAP[
-                job_config.training.mixed_precision_reduce
-            ],
+            param_dtype=TORCH_DTYPES_MAP[job_config.training.mixed_precision_param],
+            reduce_dtype=TORCH_DTYPES_MAP[job_config.training.mixed_precision_reduce],
             pp_enabled=parallel_dims.pp_enabled,
             cpu_offload=job_config.training.enable_cpu_offload,
         )
 
         if parallel_dims.dp_replicate_enabled:
-            logger.info('Applied HSDP to the model')
+            logger.info("Applied HSDP to the model")
         else:
-            logger.info('Applied FSDP to the model')
+            logger.info("Applied FSDP to the model")
 
         if parallel_dims.cp_enabled:
-            logger.info('Applied Context Parallel to the model')
+            logger.info("Applied Context Parallel to the model")
 
         if job_config.training.enable_cpu_offload:
-            logger.info('Applied CPU Offload to the model')
+            logger.info("Applied CPU Offloading to the model")
     elif parallel_dims.dp_replicate_enabled:
         if world_mesh.ndim > 1:
-            raise RuntimeError('DDP has not supported > 1D Parallelism')
+            raise RuntimeError("DDP has not supported > 1D parallelism")
         apply_ddp(
             model,
             world_mesh,
@@ -148,23 +136,24 @@ def apply_tp(
     enable_float8: bool,
     enable_async_tp: bool,
 ):
-    """Apply tensor parallelism to the model."""
-    # 1. Parallelize the embedding and shard its outputs (which are the first transformer block's inputs)
+    """Apply tensor parallelism."""
+    # 1. Parallelize the embedding and shard its outputs (which are the first
+    # transformer block's inputs)
     # 2. Parallelize the root norm layer over the sequence dim
     # 3. Parallelize the final linear output layer
     parallelize_module(
         model,
         tp_mesh,
         {
-            'tok_embeddings': RowwiseParallel(
+            "tok_embeddings": RowwiseParallel(
                 input_layouts=Replicate(),
                 output_layouts=Shard(1),
             ),
-            'norm': SequenceParallel(),
-            'output': ColwiseParallel(
+            "norm": SequenceParallel(),
+            "output": ColwiseParallel(
                 input_layouts=Shard(1),
                 output_layouts=Shard(-1) if loss_parallel else Replicate(),
-                use_local_output=(not loss_parallel),
+                use_local_output=not loss_parallel,
             ),
         },
     )
@@ -174,8 +163,8 @@ def apply_tp(
     if enable_float8:
         # TODO(vkuzo): once float8 configuration supports delayed scaling,
         # add a check here to enforce supported float8 all-gather configurations
-        # TODO(vkuzo): add the items below to the __init__.py of torchao.float8 and import from there
-        from torchao.float8.float8_tensor_parallel import (  # type: ignore
+        # TODO(vkuzo): add the items below to __init__.py of torchao.float8 and import from there
+        from torchao.float8.float8_tensor_parallel import (
             Float8ColwiseParallel,
             Float8RowwiseParallel,
             PrepareFloat8ModuleInput,
@@ -194,29 +183,30 @@ def apply_tp(
         )
 
     # Apply tensor + sequence parallelism to every transformer block
-    # NOTE: At the cost of model code change, we can accelerate Sequnece Parallel
-    # by folding (and unfolding) the batch dimension and the sequence dimension
-    # Examples can be found at https://github.com/pytorch/torchtitan/pull/437
+    # NOTE: At the cost of model code change, we can accelerate Sequence Parallel
+    #       by folding (and unfolding) the batch dimension and the sequence dimension.
+    #       Examples can be found at https://github.com/pytorch/torchtitan/pull/437
     for layer_id, transformer_block in model.layers.items():
         layer_plan = {
-            'attention_norm': SequenceParallel(),
-            'attention': prepare_module_input(
-                input_layouts=(Shard(1), None),  # type:ignore
-                desired_input_layouts=(Replicate(), None),  # type:ignore
+            "attention_norm": SequenceParallel(),
+            "attention": prepare_module_input(
+                input_layouts=(Shard(1), None),
+                desired_input_layouts=(Replicate(), None),
             ),
-            'attention.wq': colwise_parallel(),
-            'attention.wk': colwise_parallel(),
-            'attention.wv': colwise_parallel(),
-            'attention.wo': rowwise_parallel(output_layouts=Shard(1)),
-            'ffn_norm': SequenceParallel(),
-            'feed_forward': prepare_module_input(
+            "attention.wq": colwise_parallel(),
+            "attention.wk": colwise_parallel(),
+            "attention.wv": colwise_parallel(),
+            "attention.wo": rowwise_parallel(output_layouts=Shard(1)),
+            "ffn_norm": SequenceParallel(),
+            "feed_forward": prepare_module_input(
                 input_layouts=(Shard(1),),
                 desired_input_layouts=(Replicate(),),
             ),
-            'feed_forward.w1': colwise_parallel(),
-            'feed_forward.w2': rowwise_parallel(output_layouts=Shard(1)),
-            'feed_forward.w3': colwise_parallel(),
+            "feed_forward.w1": colwise_parallel(),
+            "feed_forward.w2": rowwise_parallel(output_layouts=Shard(1)),
+            "feed_forward.w3": colwise_parallel(),
         }
+
         parallelize_module(
             module=transformer_block,
             device_mesh=tp_mesh,
@@ -224,66 +214,63 @@ def apply_tp(
         )
 
     if enable_async_tp:
-        from torch.distributed._symmetric_memory import (  # type: ignore
-            enable_symm_mem_for_group,
-        )
+        from torch.distributed._symmetric_memory import enable_symm_mem_for_group
 
-        torch._inductor.config._micro_pipeline_tp = True  # type: ignore
+        torch._inductor.config._micro_pipeline_tp = True
         enable_symm_mem_for_group(tp_mesh.get_group().group_name)
 
     logger.info(
-        f'Applied {"Float 8 " if enable_float8 else ""}{"Async " if enable_async_tp else ""}'
-        'Tensor Parallelism to the model'
+        f"Applied {'Float8 ' if enable_float8 else ''}{'Async ' if enable_async_tp else ''}"
+        "Tensor Parallelism to the model"
     )
 
 
-# For selective op activation checkpointing
+# for selective op activation checkpointing
 _save_list = {
-    torch.ops.aten.mm.default,  # type: ignore
-    torch.ops.aten._scaled_dot_product_efficient_attention.default,  # type: ignore
-    torch.ops.aten._scaled_dot_product_flash_attention.default,  # type: ignore
-    torch.ops._c10d_functional.reduce_scatter_tensor.default,  # type: ignore
-    # For low-precision training, its useful to always save
+    torch.ops.aten.mm.default,
+    torch.ops.aten._scaled_dot_product_efficient_attention.default,
+    torch.ops.aten._scaled_dot_product_flash_attention.default,
+    torch.ops._c10d_functional.reduce_scatter_tensor.default,
+    # for low precision training, it's useful to always save
     # the result of max(abs(tensor))
-    torch.ops.aten.abs.default,  # type: ignore
-    torch.ops.aten.max.default,  # type: ignore
+    torch.ops.aten.abs.default,
+    torch.ops.aten.max.default,
 }
 
 
 def _apply_ac_to_transformer_block(module: nn.Module, ac_config):
-    valid_ac_modes = ('full', 'selective')
+    valid_ac_modes = ("full", "selective")
     if ac_config.mode not in valid_ac_modes:
         raise ValueError(
-            f'Invalid AC mode: {ac_config.mode}.Valid modes: {valid_ac_modes}'
+            f"Invalid AC mode: {ac_config.mode}. Valid modes: {valid_ac_modes}"
         )
 
-    if ac_config.mode == 'full':
+    if ac_config.mode == "full":
         return ptd_checkpoint_wrapper(module, preserve_rng_state=False)
 
-    assert ac_config.mode == 'selective', f'{ac_config.mode}'
-    use_op_sac = ac_config.selective_ac_option == 'op'
+    assert ac_config.mode == "selective", f"{ac_config.mode}"
+    use_op_sac = ac_config.selective_ac_option == "op"
     use_layer_sac = ac_config.selective_ac_option.isdigit()
     if not use_op_sac and not use_layer_sac:
         raise ValueError(
-            f'Invalid selective AC option: {ac_config.selective_ac_option}.'
-            'Valid options: "op" or a positive int representing layer frequency'
+            f"Invalid selective AC option: {ac_config.selective_ac_option}. "
+            f"Valid options: 'op' or a positive int representing layer frequency"
         )
     if use_op_sac:
         from torch.utils.checkpoint import (
-            CheckpointPolicy,  # type:ignore
-            create_selective_checkpoint_contexts,  # type:ignore
+            CheckpointPolicy,
+            create_selective_checkpoint_contexts,
         )
 
         def _get_custom_policy(meta):
             def _custom_policy(ctx, func, *args, **kwargs):
-                mode = 'recompute' if ctx.is_recompute else 'forward'
-                mm_count_key = f'{mode}_mm_count'
-                if func == torch.ops.aten.mm.default:  # type: ignore
+                mode = "recompute" if ctx.is_recompute else "forward"
+                mm_count_key = f"{mode}_mm_count"
+                if func == torch.ops.aten.mm.default:
                     meta[mm_count_key] += 1
                 # Saves output of all compute ops, except every second mm
                 to_save = func in _save_list and not (
-                    func == torch.ops.aten.mm.default  # type: ignore
-                    and meta[mm_count_key] % 2 == 0
+                    func == torch.ops.aten.mm.default and meta[mm_count_key] % 2 == 0
                 )
                 return (
                     CheckpointPolicy.MUST_SAVE
@@ -295,22 +282,19 @@ def _apply_ac_to_transformer_block(module: nn.Module, ac_config):
 
         def selective_checkpointing_context_fn():
             meta = defaultdict(int)
-            return create_selective_checkpoint_contexts(
-                _get_custom_policy(meta)
-            )
+            return create_selective_checkpoint_contexts(_get_custom_policy(meta))
 
         return ptd_checkpoint_wrapper(
             module,
             context_fn=selective_checkpointing_context_fn,
             preserve_rng_state=False,
         )
-
     elif use_layer_sac:
         # Checkpoint every `ac_freq` of the modules passed to this function
         ac_freq = int(ac_config.selective_ac_option)
-        ptd_checkpoint_wrapper.__dict__.setdefault('_count', 0)
-        ptd_checkpoint_wrapper._count += 1  # type:ignore
-        if not ac_freq or ptd_checkpoint_wrapper._count % ac_freq == 0:  # type:ignore
+        ptd_checkpoint_wrapper.__dict__.setdefault("_count", 0)
+        ptd_checkpoint_wrapper._count += 1
+        if not ac_freq or ptd_checkpoint_wrapper._count % ac_freq == 0:
             return ptd_checkpoint_wrapper(module, preserve_rng_state=False)
         else:
             return module
@@ -319,24 +303,22 @@ def _apply_ac_to_transformer_block(module: nn.Module, ac_config):
 def apply_ac(model: nn.Module, ac_config):
     """Apply activation checkpointing to the model."""
     for layer_id, transformer_block in model.layers.named_children():
-        transformer_block = _apply_ac_to_transformer_block(
-            transformer_block, ac_config
-        )
+        transformer_block = _apply_ac_to_transformer_block(transformer_block, ac_config)
         model.layers.register_module(layer_id, transformer_block)
-    logger.info(
-        f'Applied {ac_config.mode} activation checkpointing to the model.'
-    )
+
+    logger.info(f"Applied {ac_config.mode} activation checkpointing to the model")
 
 
 def apply_compile(model: nn.Module):
-    """Apply torch.compile to each TransformerBlock, which makes compilation
-    efficient due to repeated structure. Alternatively, one can compile the
-    whole model (after applying DP).
+    """
+    Apply torch.compile to each TransformerBlock, which makes compilation efficient due to
+    repeated structure. Alternatively one can compile the whole model (after applying DP).
     """
     for layer_id, transformer_block in model.layers.named_children():
         transformer_block = torch.compile(transformer_block, fullgraph=True)
         model.layers.register_module(layer_id, transformer_block)
-    logger.info('Compiling each TransformerBlock with torch.compile')
+
+    logger.info("Compiling each TransformerBlock with torch.compile")
 
 
 def apply_fsdp(
@@ -348,17 +330,12 @@ def apply_fsdp(
     cpu_offload: bool = False,
 ):
     """
-    Apply data parallleism to model. FSDP2 is used here.
+    Apply data parallelism to the model. FSDP2 is used here.
     """
-    mp_policy = MixedPrecisionPolicy(
-        param_dtype=param_dtype,
-        reduce_dtype=reduce_dtype,
-    )
-    fsdp_config = {'mesh': dp_mesh, 'mp_policy': mp_policy}
+    mp_policy = MixedPrecisionPolicy(param_dtype=param_dtype, reduce_dtype=reduce_dtype)
+    fsdp_config = {"mesh": dp_mesh, "mp_policy": mp_policy}
     if cpu_offload:
-        from torch.distributed._composable import CPUOffloadPolicy
-
-        fsdp_config['offload_policy'] = CPUOffloadPolicy()
+        fsdp_config["offload_policy"] = CPUOffloadPolicy()
 
     for layer_id, transformer_block in model.layers.items():
         if pp_enabled:
@@ -367,16 +344,14 @@ def apply_fsdp(
             reshard_after_forward = False
         else:
             # As an optimization, do not reshard after forward for the last
-            # transformer_block since FSDP would prefetch it immediately
+            # transformer block since FSDP would prefetch it immediately
             reshard_after_forward = int(layer_id) < len(model.layers) - 1
         fully_shard(
             transformer_block,
             **fsdp_config,
-            # reshard_after_forward=reshard_after_forward,
+            reshard_after_forward=reshard_after_forward,
         )
-    fully_shard(
-        model, **fsdp_config
-    )  # , reshard_after_forward=(not pp_enabled))
+    fully_shard(model, **fsdp_config, reshard_after_forward=not pp_enabled)
 
 
 def apply_ddp(
@@ -387,10 +362,12 @@ def apply_ddp(
 ):
     if enable_compile:
         if enable_compiled_autograd:
-            torch._dynamo.config.optimize_ddp = (  # type: ignore
-                'python_reducer_without_compiled_forward'
+            torch._dynamo.config.optimize_ddp = (
+                "python_reducer_without_compiled_forward"
             )
         else:
-            torch.dynamo.config.optimize_ddp = 'ddp_optimizer'  # type: ignore
+            torch._dynamo.config.optimize_ddp = "ddp_optimizer"
+
     replicate(model, device_mesh=dp_mesh, bucket_cap_mb=100)
-    logger.info('Applied DDP to the model')
+
+    logger.info("Applied DDP to the model")
