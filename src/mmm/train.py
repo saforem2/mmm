@@ -179,8 +179,8 @@ def main(job_config: JobConfig):
         job_config.training.seq_len
     )
     logger.info(
-        f"{color.blue}Model {model_name} {job_config.model.flavor} "
-        f"{color.red}size: {model_param_count:,} total parameters{color.reset}"
+        f"Model {model_name} {job_config.model.flavor} "
+        f"size: {model_param_count:,} total parameters"
     )
 
     # loss fn to be shared by Pipeline Parallel and SPMD training
