@@ -47,20 +47,17 @@ import torch.nn.functional as F
 from mmm.models import summarize_model
 
 # from mmm.models.llama import Transformer, ModelArgs
-# from mmm.models.llama import Transformer, ModelArgs
 from mmm.models.llama2 import Transformer, ModelArgs
-
 
 from mmm.data.llama import LlamaDataLoader
 
-# from torch.utils.data import DataLoader
 from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
 from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
     MixedPrecision,
 )
 from torch.distributed._tensor import Shard, Replicate
-# from torch.distributed.tensor.parallel import loss_parallel
+from mmm.data.text import get_random_dataset, get_hf_data
 
 from torch.distributed.tensor.parallel import (
     parallelize_module,
@@ -70,10 +67,9 @@ from torch.distributed.tensor.parallel import (
     SequenceParallel,
 )
 
-logger = ezpz.get_logger(__name__)
-
-
 logging.getLogger('datasets').setLevel(logging.ERROR)
+
+logger = ezpz.get_logger(__name__)
 
 
 def parse_args():
@@ -90,6 +86,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=3e-3)
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--batch-size', type=int, default=24)
+    parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--tp', type=int, default=2)
     parser.add_argument('--dataset', type=str, default='random')
     # parser.add_argument('--max_batch_size', type=int, default=None)
@@ -165,7 +162,7 @@ def parallelize(model: nn.Module, device_mesh: DeviceMesh) -> nn.Module:
 
 
 def train(args: argparse.Namespace):
-    _ = ezpz.setup_torch('DDP', tensor_parallel_size=args.tp)
+    _ = ezpz.setup_torch('DDP', tensor_parallel_size=args.tp, seed=args.seed)
     world_size = ezpz.get_world_size()
     assert world_size % args.tp == 0, 'WORLD_SIZE must be divisible by TP'
     dpsize = world_size // args.tp
@@ -194,12 +191,10 @@ def train(args: argparse.Namespace):
     model.to(device_id)
     model = parallelize(model, device_mesh)
     logger.info(f'Creating optimizer=AdamW with lr={args.lr}')
-    import torch
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, foreach=True)
 
     device = ezpz.get_torch_device(as_torch_device=False)
-    from mmm.data.text import get_random_dataset, get_hf_data
 
     if args.dataset == 'random':
         data = get_random_dataset(
