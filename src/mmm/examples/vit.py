@@ -5,6 +5,7 @@ mmm/trainer/vit.py
 import argparse
 import functools
 import os
+from pathlib import Path
 import time
 from typing import Any, Optional, Sequence
 
@@ -24,7 +25,7 @@ from mmm.models.vit.attention import AttentionBlock
 logger = ezpz.get_logger(__name__)
 
 
-def parse_args(argv: Optional[Sequence[str]] = None) -> TrainArgs:
+def parse_args() -> TrainArgs:
     parser = argparse.ArgumentParser(
         prog='mmm.train.vit',
         description='Train a simple ViT',
@@ -57,7 +58,9 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> TrainArgs:
         ],
         help='CUDA SDPA backend to use.',
     )
-    return TrainArgs(**parser.parse_args(argv).__dict__)
+    # return TrainArgs(**parser.parse_args())
+    # return TrainArgs(**vars(parser.parse_args()))
+    return parser.parse_args()
 
 
 def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
@@ -196,10 +199,25 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
     return history
 
 
-def main(argv: Optional[Sequence[str]] = None):
+def main():
     # torch._dynamo.config.suppress_errors = True  # type:ignore
+    rank = ezpz.setup_torch(
+        backend=os.environ.get('BACKEND', 'DDP'),
+    )
+    # return TrainArgs(**vars(parser.parse_args()))
+    args = parse_args()
+    if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
+        try:
+            import wandb
+        except Exception as e:
+            logger.exception('Failed to import wandb')
+            raise e
+        fp = Path(__file__).resolve()
+        run = ezpz.setup_wandb(project_name=f'mmm.{fp.parent.name}.{fp.stem}')
+        assert run is not None and run is wandb.run
+        wandb.run.config.update({**vars(args)})  # type:ignore
 
-    args: TrainArgs = parse_args(argv)
+    train_args: TrainArgs = TrainArgs(**vars(args))
     config = ViTConfig(
         img_size=args.img_size,
         batch_size=args.batch_size,

@@ -33,8 +33,10 @@ FSDP:
 [0, 8, ..., 8N-8], [1, 9, ..., 8N-7], ..., [7, 15, ..., 8N-1]
 """
 
+import os
 import argparse
 import logging
+from pathlib import Path
 from time import perf_counter
 
 import ezpz
@@ -178,16 +180,38 @@ def train(args: argparse.Namespace):
         n_layers=args.n_layers,
         n_heads=args.n_heads,
         n_kv_heads=args.n_kv_heads,
+        batch_size=args.batch_size,
         vocab_size=args.vocab_size,
         multiple_of=args.multiple_of,
     )
     logger.info(f'config:\n{config}')
+    if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
+        try:
+            import wandb
+        except Exception as e:
+            logger.exception('Failed to import wandb')
+            raise e
+        fp = Path(__file__)
+        run = ezpz.setup_wandb(project_name=f'mmm.{fp.parent.stem}.{fp.stem}')
+        assert run is not None and run is wandb.run
+        from dataclasses import asdict
+
+        wandb.run.config.update(asdict(config))  # type:ignore
+
     device_type = str(ezpz.get_torch_device(as_torch_device=False))
     device_id = f'{device_type}:{ezpz.get_local_rank()}'
     model = Transformer.from_model_args(config)
-    logger.info(
-        f'\n{summarize_model(model, verbose=False, depth=2)}'  #', input_size=inshape)}'
+    mstr = summarize_model(
+        model,
+        verbose=False,
+        depth=2,
+        # input_size=(
+        #     torch.tensor((int(args.batch_size), int(args.seq_length))).to(
+        #         torch.long
+        #     )
+        # ).shape,
     )
+    logger.info(f'\n{mstr}')
     model.to(device_id)
     model = parallelize(model, device_mesh)
     logger.info(f'Creating optimizer=AdamW with lr={args.lr}')

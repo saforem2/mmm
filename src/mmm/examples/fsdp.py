@@ -1,9 +1,11 @@
 # Based on: https://github.com/pytorch/examples/blob/master/mnist/main.py
 import argparse
 import os
+from pathlib import Path
 import time
 
 import ezpz
+from ezpz.history import WANDB_DISABLED
 import torch
 import torch.distributed as dist
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
@@ -19,14 +21,20 @@ from mmm.models import summarize_model
 
 logger = ezpz.get_logger(__name__)
 
-RANK = ezpz.setup_torch(
-    backend=os.environ.get('BACKEND', 'DDP'),
-)
-WORLD_SIZE = ezpz.get_world_size()
-DEVICE = ezpz.get_torch_device()
-DEVICE_ID = f'{DEVICE}:{ezpz.get_local_rank()}'
+fp = Path(__file__)
+fname = f'{fp.parent.stem}.{fp.stem}'
+
 
 # logger.setLevel('INFO') if RANK == 0 else logger.setLevel('CRITICAL')
+#
+try:
+    import wandb
+
+    WANDB_DISABLED = os.environ.get('WANDB_DISABLED', False)
+except Exception:
+    wandb = None
+    WANDB_DISABLED = True
+
 
 if torch.cuda.is_available():
     torch.cuda.set_device(ezpz.get_local_rank())
@@ -59,6 +67,8 @@ class Net(nn.Module):
 
 
 def train(model, train_loader, optimizer, epoch, sampler=None):
+    DEVICE = ezpz.get_torch_device()
+    DEVICE_ID = f'{DEVICE}:{ezpz.get_local_rank()}'
     model.train()
     ddp_loss = torch.zeros(2).to(DEVICE_ID)
     if sampler:
@@ -84,6 +94,8 @@ def train(model, train_loader, optimizer, epoch, sampler=None):
 
 
 def test(model, test_loader):
+    DEVICE = ezpz.get_torch_device()
+    DEVICE_ID = f'{DEVICE}:{ezpz.get_local_rank()}'
     model.eval()
     # correct = 0
     ddp_loss = torch.zeros(3).to(DEVICE_ID)
@@ -111,8 +123,10 @@ def test(model, test_loader):
 
 
 def prepare_model_optimizer_and_scheduler(args: argparse.Namespace) -> dict:
+    DEVICE = ezpz.get_torch_device()
+    DEVICE_ID = f'{DEVICE}:{ezpz.get_local_rank()}'
     model = Net().to(DEVICE_ID)
-    logger.info(f'\n{summarize_model(model, verbose=False, depth=1)}')
+    logger.info(f'\n{summarize_model(model, verbose=False, depth=2)}')
     dtypes = {
         'fp16': torch.float16,
         'bf16': torch.bfloat16,
@@ -141,6 +155,20 @@ def prepare_model_optimizer_and_scheduler(args: argparse.Namespace) -> dict:
 
 
 def fsdp_main(args: argparse.Namespace) -> None:
+    rank = ezpz.setup_torch(
+        backend=os.environ.get('BACKEND', 'DDP'),
+    )
+    # DEVICE = ezpz.get_torch_device()
+    if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
+        try:
+            import wandb
+        except Exception as e:
+            logger.exception('Failed to import wandb')
+            raise e
+        run = ezpz.setup_wandb(project_name='mmm')
+        assert run is not None and run is wandb.run
+        wandb.run.config.update({**vars(args)})
+
     # data = prepare_data()
     from mmm.data.vision import get_mnist
 
@@ -187,10 +215,10 @@ def fsdp_main(args: argparse.Namespace) -> None:
     if args.save_model:
         dist.barrier()  # wait for slowpokes
         states = model.state_dict()
-        if RANK == 0:
+        if rank == 0:
             torch.save(states, 'mnist_cnn.pt')
 
-    if RANK == 0:
+    if rank == 0:
         dataset = history.finalize(run_name='mmm-fsdp', dataset_fname='train')
         logger.info(f'{dataset=}')
 
