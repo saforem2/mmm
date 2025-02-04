@@ -9,6 +9,7 @@ mmm/train.py
 Modified from:
 <https://github.com/pytorch/torchtitan/blob/2a4437014e66bcf88a3f0419b816266e6326d539/train.py>
 """
+
 import time
 from datetime import timedelta
 
@@ -82,16 +83,17 @@ def main(job_config: JobConfig):
     gc_handler = utils.GarbageCollection(gc_freq=job_config.training.gc_freq)
 
     from ezpz.utils import breakpoint
+
     tpsize = job_config.training.tensor_parallel_degree
     _ = ezpz.setup_torch('DDP', tensor_parallel_size=tpsize)
     world_size = ezpz.get_world_size()
     assert world_size % tpsize == 0, 'WORLD_SIZE must be divisible by TP'
     dpsize = world_size // tpsize
-    #device_mesh = init_device_mesh(
+    # device_mesh = init_device_mesh(
     #    str(ezpz.get_torch_device()),
     #    (dpsize, tpsize),
     #    mesh_dim_names=('dp', 'tp'),
-    #)
+    # )
     # logger.info(f'Device mesh created:\n{device_mesh=}')
     parallel_dims = ParallelDims(
         dp_shard=job_config.training.data_parallel_shard_degree,
@@ -113,7 +115,9 @@ def main(job_config: JobConfig):
     logger.info(f'Peak FLOPS used for computing MFU: {gpu_peak_flops:.3e}')
 
     # build meshes
-    world_mesh = parallel_dims.build_mesh(device_type=ezpz.get_torch_device_type())
+    world_mesh = parallel_dims.build_mesh(
+        device_type=ezpz.get_torch_device_type()
+    )
     if parallel_dims.dp_enabled:
         # try:
         dp_mesh = world_mesh['dp_shard']
@@ -132,14 +136,16 @@ def main(job_config: JobConfig):
     # utils.set_determinism(
     #     world_mesh=world_mesh,
     #     device=device,
-    #     seed=job_config.training.seed, 
+    #     seed=job_config.training.seed,
     #     deterministic=job_config.training.deterministic
     # )
     model_name = job_config.model.name
 
     # build tokenizer
     tokenizer_type = model_name_to_tokenizer[model_name]
-    tokenizer = build_tokenizer(tokenizer_type, job_config.model.tokenizer_path)
+    tokenizer = build_tokenizer(
+        tokenizer_type, job_config.model.tokenizer_path
+    )
     # build data loader
     data_loader = build_hf_data_loader(
         job_config.training.dataset,
@@ -148,7 +154,7 @@ def main(job_config: JobConfig):
         job_config.training.batch_size,
         job_config.training.seq_len,
         dp_degree,
-        dp_rank
+        dp_rank,
     )
 
     # build model (using meta init)
@@ -162,7 +168,9 @@ def main(job_config: JobConfig):
     model_config.vocab_size = tokenizer.n_words
     model_config.max_seq_len = job_config.training.seq_len
 
-    logger.info(f'Building {model_name} {job_config.model.flavor} with {model_config}')
+    logger.info(
+        f'Building {model_name} {job_config.model.flavor} with {model_config}'
+    )
     with torch.device('meta'):
         model = model_cls.from_model_args(model_config)
 
@@ -176,11 +184,11 @@ def main(job_config: JobConfig):
     num_flop_per_token = utils.get_num_flop_per_token(
         utils.get_num_params(model, exclude_embedding=True),
         model_config,
-        job_config.training.seq_len
+        job_config.training.seq_len,
     )
     logger.info(
-        f"Model {model_name} {job_config.model.flavor} "
-        f"size: {model_param_count:,} total parameters"
+        f'Model {model_name} {job_config.model.flavor} '
+        f'size: {model_param_count:,} total parameters'
     )
 
     # loss fn to be shared by Pipeline Parallel and SPMD training
@@ -208,14 +216,22 @@ def main(job_config: JobConfig):
     if parallel_dims.pp_enabled:
         # apply PT-D Pipeline Parallel
         pp_schedule, model_parts = models_pipelining_fns[model_name](
-            model, pp_mesh, parallel_dims, job_config, device, model_config, loss_fn
+            model,
+            pp_mesh,
+            parallel_dims,
+            job_config,
+            device,
+            model_config,
+            loss_fn,
         )
 
         # For PP with looped schedules, each item in model_parts is one stage-model-chunk
         # We need to iterate through model_parts to apply SPMD parallelisms, compilation, optimizer, and checkpointing
         for m in model_parts:
             # apply SPMD-style PT-D techniques
-            models_parallelize_fns[model_name](m, world_mesh, parallel_dims, job_config)
+            models_parallelize_fns[model_name](
+                m, world_mesh, parallel_dims, job_config
+            )
             m.to_empty(device=init_device)
             with torch.no_grad():
                 m.init_weights(buffer_device=buffer_device)
@@ -223,7 +239,9 @@ def main(job_config: JobConfig):
 
     else:
         # Apply PT-D Tensor Parallel, activation checkpointing, torch.compile, Data Parallel
-        models_parallelize_fns[model_name](model, world_mesh, parallel_dims, job_config)
+        models_parallelize_fns[model_name](
+            model, world_mesh, parallel_dims, job_config
+        )
         model.to_empty(device=init_device)
         with torch.no_grad():
             model.init_weights(buffer_device=buffer_device)
@@ -233,12 +251,12 @@ def main(job_config: JobConfig):
     try:
         device_mem_stats = device_memory_monitor.get_peak_stats()
         logger.info(
-            f"{device_type.upper()} memory usage for model: "
-            f"{device_mem_stats.max_reserved_gib:.2f}GiB"
-            f"({device_mem_stats.max_reserved_pct:.2f}%)"
+            f'{device_type.upper()} memory usage for model: '
+            f'{device_mem_stats.max_reserved_gib:.2f}GiB'
+            f'({device_mem_stats.max_reserved_pct:.2f}%)'
         )
     except Exception as e:
-        logger.error(f"Error getting memory stats: {e}")
+        logger.error(f'Error getting memory stats: {e}')
 
     # build optimizer after applying parallelisms to the model
     optimizers = build_optimizers(model_parts, job_config)
@@ -252,17 +270,17 @@ def main(job_config: JobConfig):
         model_parts=model_parts,
         optimizers=optimizers,
         lr_schedulers=lr_schedulers,
-        states={"train_state": train_state},
-        job_config=job_config
+        states={'train_state': train_state},
+        job_config=job_config,
     )
 
     if job_config.checkpoint.create_seed_checkpoint:
-        assert (
-            world_size == 1
-        ), "Must create seed-checkpoint using one gpu, to disable sharding"
+        assert world_size == 1, (
+            'Must create seed-checkpoint using one gpu, to disable sharding'
+        )
 
         checkpoint.save(curr_step=0, force=True)
-        logger.info("Seed checkpoint created, exiting")
+        logger.info('Seed checkpoint created, exiting')
         return
 
     checkpoint.load(step=job_config.checkpoint.load_step)
@@ -274,8 +292,12 @@ def main(job_config: JobConfig):
     if train_state.step > 0:
         for idx, step in enumerate(train_state.log_steps):
             metrics = {
-                'loss_metrics/global_avg_loss': train_state.global_avg_losses[idx],
-                'loss_metrics/global_max_loss': train_state.global_max_losses[idx],
+                'loss_metrics/global_avg_loss': train_state.global_avg_losses[
+                    idx
+                ],
+                'loss_metrics/global_max_loss': train_state.global_max_losses[
+                    idx
+                ],
             }
             metric_logger.log(metrics, step=step)
 
@@ -293,25 +315,29 @@ def main(job_config: JobConfig):
     try:
         device_memory_monitor.reset_peak_stats()
     except Exception as e:
-        logger.error(f"Error resetting memory stats: {e}")
+        logger.error(f'Error resetting memory stats: {e}')
     checkpoint.reset()
 
     # train loop
     logger.info(
         f'Training starts at step {train_state.step + 1}, '
-        f"with local batch size {job_config.training.batch_size}, "
-        f"global batch size {job_config.training.batch_size * dp_degree}, "
-        f"sequence length {job_config.training.seq_len}, "
-        f"total steps {job_config.training.steps} "
-        f"(warmup {job_config.training.warmup_steps})"
+        f'with local batch size {job_config.training.batch_size}, '
+        f'global batch size {job_config.training.batch_size * dp_degree}, '
+        f'sequence length {job_config.training.seq_len}, '
+        f'total steps {job_config.training.steps} '
+        f'(warmup {job_config.training.warmup_steps})'
     )
     from ezpz import History
+
     history = History()
-    with maybe_enable_profiling(
-        job_config, global_step=train_state.step
-    ) as torch_profiler, maybe_enable_memory_snapshot(
-        job_config, global_step=train_state.step
-    ) as memory_profiler:
+    with (
+        maybe_enable_profiling(
+            job_config, global_step=train_state.step
+        ) as torch_profiler,
+        maybe_enable_memory_snapshot(
+            job_config, global_step=train_state.step
+        ) as memory_profiler,
+    ):
         while train_state.step < job_config.training.steps:
             train_state.step += 1
             gc_handler.run(train_state.step)
@@ -330,7 +356,7 @@ def main(job_config: JobConfig):
             # apply context parallelism if cp is enabled
             optional_context_parallel_ctx = (
                 utils.create_context_parallel_ctx(
-                    cp_mesh=world_mesh["cp"],
+                    cp_mesh=world_mesh['cp'],
                     cp_buffers=[input_ids, labels, model.freqs_cis],
                     cp_seq_dims=[1, 1, 0],
                     cp_no_restore_buffers={input_ids, labels},
@@ -387,7 +413,9 @@ def main(job_config: JobConfig):
 
             # calculate float8 dynamic amax/scale for all-parameter for FSDP2
             # it issues a single all-reduce for all parameters at once for better performance
-            float8_handler.precompute_float8_dynamic_scale_for_fsdp(model_parts)
+            float8_handler.precompute_float8_dynamic_scale_for_fsdp(
+                model_parts
+            )
 
             losses_since_last_log.append(loss)
 
@@ -404,8 +432,8 @@ def main(job_config: JobConfig):
                     or parallel_dims.cp_enabled
                 ):
                     global_avg_loss, global_max_loss = (
-                        utils.dist_mean(avg_loss, world_mesh["dp_cp"]),
-                        utils.dist_max(max_loss, world_mesh["dp_cp"]),
+                        utils.dist_mean(avg_loss, world_mesh['dp_cp']),
+                        utils.dist_max(max_loss, world_mesh['dp_cp']),
                     )
                 else:
                     global_avg_loss, global_max_loss = avg_loss, max_loss
@@ -427,33 +455,37 @@ def main(job_config: JobConfig):
                 mfu = 100 * num_flop_per_token * tps / gpu_peak_flops
 
                 time_end_to_end = time_delta / job_config.metrics.log_freq
-                time_data_loading = sum(data_loading_times) / len(data_loading_times)
-                time_data_loading_pct = 100 * sum(data_loading_times) / time_delta
+                time_data_loading = sum(data_loading_times) / len(
+                    data_loading_times
+                )
+                time_data_loading_pct = (
+                    100 * sum(data_loading_times) / time_delta
+                )
 
                 try:
                     device_mem_stats = device_memory_monitor.get_peak_stats()
                 except Exception as e:
                     device_mem_stats = None
                     if train_state.step == 1:
-                        logger.error(f"Error getting memory stats: {e}")
+                        logger.error(f'Error getting memory stats: {e}')
 
                 metrics = {
-                    "loss_metrics/global_avg_loss": global_avg_loss,
-                    "loss_metrics/global_max_loss": global_max_loss,
-                    "throughput(tps)": tps,
-                    "mfu(%)": mfu,
-                    "time_metrics/end_to_end(s)": time_end_to_end,
-                    "time_metrics/data_loading(s)": time_data_loading,
-                    "time_metrics/data_loading(%)": time_data_loading_pct,
+                    'loss_metrics/global_avg_loss': global_avg_loss,
+                    'loss_metrics/global_max_loss': global_max_loss,
+                    'throughput(tps)': tps,
+                    'mfu(%)': mfu,
+                    'time_metrics/end_to_end(s)': time_end_to_end,
+                    'time_metrics/data_loading(s)': time_data_loading,
+                    'time_metrics/data_loading(%)': time_data_loading_pct,
                 }
                 if device_mem_stats:
                     metrics |= {
-                        "memory/max_active(GiB)": device_mem_stats.max_active_gib,
-                        "memory/max_active(%)": device_mem_stats.max_active_pct,
-                        "memory/max_reserved(GiB)": device_mem_stats.max_reserved_gib,
-                        "memory/max_reserved(%)": device_mem_stats.max_reserved_pct,
-                        "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
-                        "memory/num_ooms": device_mem_stats.num_ooms,
+                        'memory/max_active(GiB)': device_mem_stats.max_active_gib,
+                        'memory/max_active(%)': device_mem_stats.max_active_pct,
+                        'memory/max_reserved(GiB)': device_mem_stats.max_reserved_gib,
+                        'memory/max_reserved(%)': device_mem_stats.max_reserved_pct,
+                        'memory/num_alloc_retries': device_mem_stats.num_alloc_retries,
+                        'memory/num_ooms': device_mem_stats.num_ooms,
                     }
                 logger.info(
                     history.update(
@@ -462,9 +494,12 @@ def main(job_config: JobConfig):
                             # 'loss': global_avg_loss,
                             # 'tps': tps,
                             # 'mfu': mfu,
-                            **metrics
+                            **metrics,
                         }
-                    ).replace('loss_metrics/', '').replace('time_metrics/', '').replace('memory/', '')
+                    )
+                    .replace('loss_metrics/', '')
+                    .replace('time_metrics/', '')
+                    .replace('memory/', '')
                 )
 
                 metric_logger.log(metrics, step=train_state.step)
@@ -495,10 +530,11 @@ def main(job_config: JobConfig):
                     device_memory_monitor.reset_peak_stats()
                 except Exception as e:
                     if train_state.step == 1:
-                        logger.error(f"Error resetting memory stats: {e}")
+                        logger.error(f'Error resetting memory stats: {e}')
 
             checkpoint.save(
-                train_state.step, force=(train_state.step == job_config.training.steps)
+                train_state.step,
+                force=(train_state.step == job_config.training.steps),
             )
 
             # signal the profiler that the next profiling step has started
@@ -511,20 +547,22 @@ def main(job_config: JobConfig):
             # (assuming lazy init and compilation are finished)
             if train_state.step == 1:
                 utils.set_pg_timeouts(
-                    timeout=timedelta(seconds=job_config.comm.train_timeout_seconds),
+                    timeout=timedelta(
+                        seconds=job_config.comm.train_timeout_seconds
+                    ),
                     world_mesh=world_mesh,
                 )
 
     if torch.distributed.get_rank() == 0:
-        logger.info("Sleeping 2 seconds for other ranks to complete")
+        logger.info('Sleeping 2 seconds for other ranks to complete')
         time.sleep(2)
 
     metric_logger.close()
-    logger.info("Training completed")
+    logger.info('Training completed')
     torch.distributed.destroy_process_group()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     config = JobConfig()
     config.parse_args()
     main(config)
