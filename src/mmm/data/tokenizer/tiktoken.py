@@ -28,8 +28,6 @@ import tiktoken
 from tiktoken.load import load_tiktoken_bpe
 
 from mmm.data.tokenizer.tokenizer import Tokenizer
-# from torchtitan.datasets.tokenizer.tokenizer import Tokenizer
-# from torchtitan.logging import logger
 #
 
 logger = ezpz.get_logger(__name__)
@@ -56,22 +54,23 @@ class TikTokenizer(Tokenizer):
         mergeable_ranks = load_tiktoken_bpe(model_path)
         num_base_tokens = len(mergeable_ranks)
         special_tokens = [
-            "<|begin_of_text|>",
-            "<|end_of_text|>",
-            "<|reserved_special_token_0|>",
-            "<|reserved_special_token_1|>",
-            "<|reserved_special_token_2|>",
-            "<|reserved_special_token_3|>",
-            "<|start_header_id|>",
-            "<|end_header_id|>",
-            "<|reserved_special_token_4|>",
-            "<|eot_id|>",  # end of turn
+            '<|begin_of_text|>',
+            '<|end_of_text|>',
+            '<|reserved_special_token_0|>',
+            '<|reserved_special_token_1|>',
+            '<|reserved_special_token_2|>',
+            '<|reserved_special_token_3|>',
+            '<|start_header_id|>',
+            '<|end_header_id|>',
+            '<|reserved_special_token_4|>',
+            '<|eot_id|>',  # end of turn
         ] + [
-            f"<|reserved_special_token_{i}|>"
+            f'<|reserved_special_token_{i}|>'
             for i in range(5, self.num_reserved_special_tokens - 5)
         ]
         self.special_tokens = {
-            token: num_base_tokens + i for i, token in enumerate(special_tokens)
+            token: num_base_tokens + i
+            for i, token in enumerate(special_tokens)
         }
         self.model = tiktoken.Encoding(
             name=Path(model_path).name,
@@ -82,15 +81,15 @@ class TikTokenizer(Tokenizer):
 
         self._n_words: int = self.model.n_vocab
         # BOS / EOS token IDs
-        self.bos_id: int = self.special_tokens["<|begin_of_text|>"]
-        self.eos_id: int = self.special_tokens["<|end_of_text|>"]
+        self.bos_id: int = self.special_tokens['<|begin_of_text|>']
+        self.eos_id: int = self.special_tokens['<|end_of_text|>']
         self.pad_id: int = -1
         self.stop_tokens = {
-            self.special_tokens["<|end_of_text|>"],
-            self.special_tokens["<|eot_id|>"],
+            self.special_tokens['<|end_of_text|>'],
+            self.special_tokens['<|eot_id|>'],
         }
         logger.info(
-            f"TikTokenizer built: #words {self.n_words}, BOS ID {self.bos_id}, EOS ID {self.eos_id}"
+            f'TikTokenizer built: #words {self.n_words}, BOS ID {self.bos_id}, EOS ID {self.eos_id}'
         )
 
     def encode(
@@ -99,8 +98,12 @@ class TikTokenizer(Tokenizer):
         *,
         bos: bool,
         eos: bool,
-        allowed_special: Optional[Union[Literal["all"], AbstractSet[str]]] = None,
-        disallowed_special: Optional[Union[Literal["all"], Collection[str]]] = None,
+        allowed_special: Optional[
+            Union[Literal['all'], AbstractSet[str]]
+        ] = None,
+        disallowed_special: Optional[
+            Union[Literal['all'], Collection[str]]
+        ] = None,
     ) -> List[int]:
         """
         Encodes a string into a list of token IDs.
