@@ -108,175 +108,129 @@ Explicitly, in my case, these were located at:
 ### `_fsdp_collectives.py`
 
 ```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
+diff _fsdp_collectives_orig.py _fsdp_collectives_new.py
 20c20
-<     all_gather_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]]
+<     all_gather_event: Optional[torch.cuda.Event]
 ---
->     all_gather_event: Optional[torch.cuda.Event]
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
+>     all_gather_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]]
 131,132c131,132
-<     all_gather_copy_in_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
-<     all_gather_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
+<     all_gather_copy_in_stream: torch.cuda.Stream,
+<     all_gather_stream: torch.cuda.Stream,
 ---
->     all_gather_copy_in_stream: torch.cuda.Stream,
->     all_gather_stream: torch.cuda.Stream,
+>     all_gather_copy_in_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
+>     all_gather_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
+136c136,144
+<     with torch.cuda.stream(all_gather_copy_in_stream):
+---
+>     if torch.cuda.is_available():
+>         agc_cm = torch.cuda.stream(all_gather_copy_in_stream)
+>     elif torch.xpu.is_available():
+>         agc_cm = torch.xpu.stream(all_gather_copy_in_stream)
+>     else:
+>         raise RuntimeError("No available device")
+>     with agc_cm:
+162c170,182
+<     with torch.cuda.stream(all_gather_stream):
+---
+>     if torch.cuda.is_available():
+>         ags = torch.cuda.stream(all_gather_stream)
+>     elif torch.xpu.is_available():
+>         ags = torch.xpu.stream(all_gather_stream)
+>     else:
+>         raise RuntimeError("No available device")
+>     with ags:
+247c267,271
+<         torch.cuda.current_stream().wait_event(all_gather_event)
+---
+>         if torch.cuda.is_available():
+>             torch.cuda.current_stream().wait_event(all_gather_event)
+>         elif torch.xpu.is_available():
+>             torch.xpu.current_stream().wait_event(all_gather_event)
+285c309
+<     reduce_scatter_stream: torch.cuda.Stream,
+---
+>     reduce_scatter_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
+291c315
+<     all_reduce_stream: torch.cuda.Stream,
+---
+>     all_reduce_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
+321c345,349
+<     current_stream = torch.cuda.current_stream()
+---
+>     current_stream = (
+>             torch.cuda.current_stream() if torch.cuda.is_available()
+>             else torch.xpu.current_stream() if torch.xpu.is_available()
+>             else None
+>     )
+325c353,361
+<     with torch.cuda.stream(reduce_scatter_stream):
+---
+>     if torch.cuda.is_available():
+>         cm = torch.cuda.stream(reduce_scatter_stream)
+>     elif torch.xpu.is_available():
+>         reduce_scatter_reduce_op = ReduceOp.SUM
+>         cm = torch.xpu.stream(reduce_scatter_stream)
+>     else:
+>         raise RuntimeError("No available device")
+>     with cm:
+358c394,409
+<             with torch.cuda.stream(all_reduce_stream):
+---
+>             if torch.cuda.is_available():
+>                 cm1 = torch.cuda.stream(all_reduce_stream)
+>             elif torch.xpu.is_available():
+>                 cm1 = torch.xpu.stream(all_reduce_stream)
+>             else:
+>                 raise RuntimeError("No available device")
+>             # with torch.cuda.stream(all_reduce_stream):
+>             with cm1:
+364c415,429
+<     with torch.cuda.stream(post_reduce_stream):
+---
+>     if torch.cuda.is_available():
+>         cm2 = torch.cuda.stream(post_reduce_stream)
+>     elif torch.xpu.is_available():
+>         cm2 = torch.xpu.stream(post_reduce_stream)
+>     else:
+>         raise RuntimeError("No available device")
+>     # with torch.cuda.stream(post_reduce_stream):
+>     with cm2:
 ```
 
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-136,144c136
-<     if torch.cuda.is_available():
-<         agc_cm = torch.cuda.stream(all_gather_copy_in_stream)
-<     elif torch.xpu.is_available():
-<         agc_cm = torch.xpu.stream(all_gather_copy_in_stream)
-<     else:
-<         raise RuntimeError("No available device")
-<     with agc_cm:
----
->     with torch.cuda.stream(all_gather_copy_in_stream):
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-170,182c162
-<     if torch.cuda.is_available():
-<         ags = torch.cuda.stream(all_gather_stream)
-<     elif torch.xpu.is_available():
-<         ags = torch.xpu.stream(all_gather_stream)
-<     else:
-<         raise RuntimeError("No available device")
-<     with ags:
----
->     with torch.cuda.stream(all_gather_stream):
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-267,271c247
-<         if torch.cuda.is_available():
-<             torch.cuda.current_stream().wait_event(all_gather_event)
-<         elif torch.xpu.is_available():
-<             torch.xpu.current_stream().wait_event(all_gather_event)
----
->         torch.cuda.current_stream().wait_event(all_gather_event)
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-309c285
-<     reduce_scatter_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
----
->     reduce_scatter_stream: torch.cuda.Stream,
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-315c291
-<     all_reduce_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
----
->     all_reduce_stream: torch.cuda.Stream,
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-345,349c321
-<     current_stream = (
-<             torch.cuda.current_stream() if torch.cuda.is_available()
-<             else torch.xpu.current_stream() if torch.xpu.is_available()
-<             else None
-<     )
----
->     current_stream = torch.cuda.current_stream()
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-353,361c325
-<     if torch.cuda.is_available():
-<         cm = torch.cuda.stream(reduce_scatter_stream)
-<     elif torch.xpu.is_available():
-<         reduce_scatter_reduce_op = ReduceOp.SUM
-<         cm = torch.xpu.stream(reduce_scatter_stream)
-<     else:
-<         raise RuntimeError("No available device")
-<     with cm:
----
->     with torch.cuda.stream(reduce_scatter_stream):
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-394,409c358
-<             if torch.cuda.is_available():
-<                 cm1 = torch.cuda.stream(all_reduce_stream)
-<             elif torch.xpu.is_available():
-<                 cm1 = torch.xpu.stream(all_reduce_stream)
-<             else:
-<                 raise RuntimeError("No available device")
-<             # with torch.cuda.stream(all_reduce_stream):
-<             with cm1:
----
->             with torch.cuda.stream(all_reduce_stream):
-```
-
-```diff
-diff _fsdp_collectives_new.py _fsdp_collectives_orig.py
-415,429c364
-<     if torch.cuda.is_available():
-<         cm2 = torch.cuda.stream(post_reduce_stream)
-<     elif torch.xpu.is_available():
-<         cm2 = torch.xpu.stream(post_reduce_stream)
-<     else:
-<         raise RuntimeError("No available device")
-<     # with torch.cuda.stream(post_reduce_stream):
-<     with cm2:
----
->     with torch.cuda.stream(post_reduce_stream):
-```
 
 ### `_fsdp_state.py`
 
-```diff
-diff _fsdp_state_new.py _fsdp_state_orig.py
-15d14
-<     Union,
-60c59
-<         self.post_optim_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]] = None
----
->         self.post_optim_event: Optional[torch.cuda.Event] = None
-```
 
 ```diff
-diff _fsdp_state_new.py _fsdp_state_orig.py
-131,135c130
-<                 current_stream = (
-<                     torch.cuda.current_stream() if torch.cuda.is_available()
-<                     else torch.xpu.current_stream()
-<                 )
-< 
+14a15
+>     Union,
+59c60
+<         self.post_optim_event: Optional[torch.cuda.Event] = None
 ---
->                 current_stream = torch.cuda.current_stream()
+>         self.post_optim_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]] = None
+130c131,135
+<                 current_stream = torch.cuda.current_stream()
+---
+>                 current_stream = (
+>                     torch.cuda.current_stream() if torch.cuda.is_available()
+>                     else torch.xpu.current_stream()
+>                 )
+> 
+294,296c299,306
+<                     torch.cuda.current_stream().wait_event(
+<                         self._comm_ctx.reduce_scatter_state.event
+<                     )
+---
+>                     if torch.cuda.is_available():
+>                         torch.cuda.current_stream().wait_event(
+>                             self._comm_ctx.reduce_scatter_state.event
+>                         )
+>                     elif torch.xpu.is_available():
+>                         torch.xpu.current_stream().wait_event(
+>                             self._comm_ctx.reduce_scatter_state.event
+>                         )
 ```
 
-```diff
-diff _fsdp_state_new.py _fsdp_state_orig.py
-299,306c294,296
-<                     if torch.cuda.is_available():
-<                         torch.cuda.current_stream().wait_event(
-<                             self._comm_ctx.reduce_scatter_state.event
-<                         )
-<                     elif torch.xpu.is_available():
-<                         torch.xpu.current_stream().wait_event(
-<                             self._comm_ctx.reduce_scatter_state.event
-<                         )
----
->                     torch.cuda.current_stream().wait_event(
->                         self._comm_ctx.reduce_scatter_state.event
->                     )
-```
 
 ## Working
 
