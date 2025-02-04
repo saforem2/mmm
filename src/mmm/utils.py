@@ -13,6 +13,7 @@ from datetime import timedelta
 from typing import Generator, Iterable, List, Optional, Set, Union
 
 import ezpz
+
 # from jax._src.custom_derivatives import linear_call
 import torch
 from torch._utils import _get_device_module
@@ -153,6 +154,7 @@ def set_determinism(
     if spmd_mesh and spmd_mesh.get_coordinate() is not None:
         # torch.distributed.tensor._random.manual_seed(seed, spmd_mesh)
         from torch.distributed._tensor.random import manual_seed
+
         manual_seed(seed, spmd_mesh)
 
 
@@ -232,20 +234,21 @@ def create_context_parallel_ctx(
 
 
 def get_train_context(
-        enable_loss_parallel: bool,
-        enable_compiled_autograd: bool
+    enable_loss_parallel: bool, enable_compiled_autograd: bool
 ):
     @contextlib.contextmanager
     def context(cp_context: Optional[Generator[None, None, None]] = None):
         with contextlib.ExitStack() as stack:
             if enable_loss_parallel:
-                from torch.distributed.tensor.parallel.loss import loss_parallel
+                from torch.distributed.tensor.parallel.loss import (
+                    loss_parallel,
+                )
+
                 stack.enter_context(loss_parallel())
             if enable_compiled_autograd:
                 from torch._dynamo.utils import maybe_enable_compiled_autograd
-                stack.enter_context(
-                    maybe_enable_compiled_autograd(True)
-                )
+
+                stack.enter_context(maybe_enable_compiled_autograd(True))
             if cp_context is not None:
                 from torch.nn.attention import sdpa_kernel, SDPBackend
 
@@ -253,7 +256,10 @@ def get_train_context(
                 # TODO (xilunwu): Support cuDNN backend
                 stack.enter_context(
                     sdpa_kernel(
-                        [SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]
+                        [
+                            SDPBackend.FLASH_ATTENTION,
+                            SDPBackend.EFFICIENT_ATTENTION,
+                        ]
                     )
                 )
                 stack.enter_context(cp_context)
@@ -267,7 +273,7 @@ def _get_distributed_backend(job_config):
     if device_type in tdist.Backend.default_device_backend_map.keys():
         backend = tdist.Backend.default_device_backend_map.get(device_type)
     if job_config.training.enable_cpu_offload:
-        backend = f"{device_type}:{backend},cpu:gloo"
+        backend = f'{device_type}:{backend},cpu:gloo'
     return backend
 
 
@@ -301,7 +307,9 @@ def init_distributed(job_config):
         pass
 
 
-def get_num_params(model: torch.nn.Module, exclude_embedding: bool = False) -> int:
+def get_num_params(
+    model: torch.nn.Module, exclude_embedding: bool = False
+) -> int:
     num_params = sum(p.numel() for p in model.parameters())
     if exclude_embedding:
         num_params -= model.tok_embeddings.weight.numel()
@@ -313,7 +321,7 @@ def get_num_flop_per_token(num_params: int, model_config, seq_len) -> int:
         model_config.n_layers,
         model_config.n_heads,
         model_config.dim // model_config.n_heads,
-        seq_len
+        seq_len,
     )
     # Reasoning behind the factor of 12 for the self-attention part of the formula:
     # 1. each self-attention has 2 matmul in the forward and 4 in the backward (6)
@@ -334,31 +342,35 @@ def get_peak_flops(device_name: str) -> int:
         filtered_lines = [
             line
             for line in result.stdout.splitlines()
-            if "NVIDIA" in line and "H100" in line
+            if 'NVIDIA' in line and 'H100' in line
         ]
         # Join all filtered lines into a single string
-        device_name = " ".join(filtered_lines) or device_name
+        device_name = ' '.join(filtered_lines) or device_name
     except FileNotFoundError as e:
-        logger.warning(f"Error running lspci: {e}, fallback to use device_name")
+        logger.warning(
+            f'Error running lspci: {e}, fallback to use device_name'
+        )
 
-    if "A100" in device_name:
+    if 'A100' in device_name:
         # data from https://www.nvidia.com/en-us/data-center/a100/
         return int(312e12)
 
-    elif "H100" in device_name:
+    elif 'H100' in device_name:
         # data from https://www.nvidia.com/en-us/data-center/h100/
         # NOTE: Specifications are one-half lower without sparsity.
-        if "NVL" in device_name:
+        if 'NVL' in device_name:
             return int(835e12)
-        elif "PCIe" in device_name:
+        elif 'PCIe' in device_name:
             return int(756e12)
         else:  # for H100 SXM and other variants
             return int(989e12)
-    elif "H200" in device_name:
+    elif 'H200' in device_name:
         # data from https://www.nvidia.com/en-us/data-center/h200/
         return int(989e12)
     else:  # for other GPU types, assume A100
-        logger.warning(f"Peak flops undefined for: {device_name}, fallback to A100")
+        logger.warning(
+            f'Peak flops undefined for: {device_name}, fallback to A100'
+        )
         return int(312e12)
 
 
@@ -390,12 +402,12 @@ class NoColor:
 
 @torch.no_grad()
 def clip_grad_norm_(
-        parameters: Union[torch.Tensor, Iterable[torch.Tensor]],
-        max_norm: float,
-        norm_type: float = 2.0,
-        error_if_nonfinite: bool = False,
-        foreach: Optional[bool] = None,
-        pp_mesh: Optional[DeviceMesh] = None,
+    parameters: Union[torch.Tensor, Iterable[torch.Tensor]],
+    max_norm: float,
+    norm_type: float = 2.0,
+    error_if_nonfinite: bool = False,
+    foreach: Optional[bool] = None,
+    pp_mesh: Optional[DeviceMesh] = None,
 ):
     """
     Clip the gradient norm of an iterable of parameters.
@@ -425,6 +437,7 @@ def clip_grad_norm_(
     """
     grads = [p.grad for p in parameters if p.grad is not None]
     from mmm.clip_grad import _get_total_norm, _clip_grads_with_norm_
+
     total_norm = _get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
     # total_norm = get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
     # total_norm = torch.nn.utils.get_total_norm(
@@ -444,10 +457,14 @@ def clip_grad_norm_(
 
     if pp_mesh is not None:
         if math.isinf(norm_type):
-            tdist.all_reduce(total_norm, op=tdist.ReduceOp.MAX, group=pp_mesh.get_group())
+            tdist.all_reduce(
+                total_norm, op=tdist.ReduceOp.MAX, group=pp_mesh.get_group()
+            )
         else:
             total_norm **= norm_type
-            tdist.all_reduce(total_norm, op=tdist.ReduceOp.SUM, group=pp_mesh.get_group())
+            tdist.all_reduce(
+                total_norm, op=tdist.ReduceOp.SUM, group=pp_mesh.get_group()
+            )
             total_norm **= 1.0 / norm_type
 
     # torch.nn.utils.clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
@@ -456,4 +473,3 @@ def clip_grad_norm_(
     # total_norm = _get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
     _clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
     return total_norm
-
