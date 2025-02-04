@@ -11,6 +11,7 @@ import torch
 from dataclasses import dataclass, field
 
 from collections import defaultdict
+
 try:
     import tomllib  # type:ignore
 except ModuleNotFoundError:
@@ -119,7 +120,7 @@ class JobConfig:
         self.parser.add_argument(
             '--job.dump_folder',
             type=str,
-            default='./torchtitan/outputs',
+            default='outputs',
             help='Folder to dump job outputs',
         )
         self.parser.add_argument(
@@ -231,7 +232,7 @@ class JobConfig:
         self.parser.add_argument(
             '--model.tokenizer_path',
             type=str,
-            default='./torchtitan/datasets/tokenizer/tokenizer.model',
+            default='data/tokenizer/tokenizer.model',
             help='Tokenizer path',
         )
 
