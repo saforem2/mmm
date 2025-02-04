@@ -31,15 +31,6 @@ from mmm.parallelisms.pipelining_utils import (
     stage_ids_this_rank,
 )
 
-# from torchtitan.config_manager import JobConfig
-# from torchtitan.models.llama.model import ModelArgs
-# from torchtitan.parallelisms.parallel_dims import ParallelDims
-# from torchtitan.parallelisms.pipelining_utils import (
-#     build_pipeline_schedule,
-#     generate_split_points,
-#     stage_ids_this_rank,
-# )
-
 logger = ezpz.get_logger(__name__)
 
 DeviceType = Union[int, str, torch.device]
@@ -80,6 +71,7 @@ def pipeline_llama_manual_split(
     parallelism.
     """
     from torch.distributed.pipelining import PipelineStage
+
     pp_rank = pp_mesh.get_local_rank()
     pp_size = pp_mesh.size()
     microbatches = (
