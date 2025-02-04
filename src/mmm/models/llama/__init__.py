@@ -14,7 +14,6 @@ Modified from:
 """
 
 from mmm.models.llama.model import ModelArgs, Transformer
-# from torchtitan.models.llama.model import ModelArgs, Transformer
 
 __all__ = ['Transformer']
 

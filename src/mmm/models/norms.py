@@ -21,7 +21,6 @@ import torch.nn as nn
 # from torch.distributed.placement_types import Partial, Replicate, Shard
 # from torch.distributed._tensor import Replicate, Shard
 # from mmm.utils import device_module
-# from torchtitan.utils import device_module
 # from torch.distributed._tensor import Shard, Replicate
 # from torch.distributed.tensor.parallel import loss_parallel
 
@@ -89,7 +88,6 @@ class Fp32LayerNorm(nn.LayerNorm):
         return output.type_as(input)
 
 
-
 class FusedRMSNorm(nn.Module):
     """Fused RMS Norm, wraps a fused Triton Kernel"""
 
@@ -102,6 +100,7 @@ class FusedRMSNorm(nn.Module):
         self.eps = eps
         self.weight = nn.Parameter(torch.ones(dim))
         from mmm.models.llama2 import RMSNorm
+
         self.fused_rms_norm_fn = RMSNorm(dim, eps=eps)
         # self.fused_rms_norm_fn = RMSNorm()
         # self.fused_rms_norm_fn = fused_rms_norm_fn

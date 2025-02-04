@@ -11,7 +11,6 @@ import ezpz
 from typing import Optional, Sequence
 
 from mmm.models.llama import llama3_configs, Transformer
-# from torchtitan.models.llama import llama3_configs, Transformer
 
 models_config = {
     'llama3': llama3_configs,
@@ -28,10 +27,10 @@ logger = ezpz.get_logger(__name__)
 
 
 def summarize_model(
-    model, 
+    model,
     verbose: bool = False,
     depth: int = 1,
-    input_size: Optional[Sequence[int]] = None
+    input_size: Optional[Sequence[int]] = None,
 ):
     try:
         from torchinfo import summary
