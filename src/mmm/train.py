@@ -10,37 +10,15 @@ Modified from:
 <https://github.com/pytorch/torchtitan/blob/2a4437014e66bcf88a3f0419b816266e6326d539/train.py>
 """
 
-import time
+import os
 from datetime import timedelta
+from pathlib import Path
+import time
 
 import ezpz
-
 from ezpz.tp import tdist
 import torch
-
 from torch.distributed.elastic.multiprocessing.errors import record
-
-# [rank0]:   File "/lus/flare/projects/Aurora_deployment/foremans/projects/saforem2/mmm/src/mmm/train.py", line 232, in main
-# [rank0]:     device_mem_stats = device_memory_monitor.get_peak_stats()
-
-
-# from torchtitan import utils
-# from torchtitan.checkpoint import CheckpointManager, TrainState
-# from torchtitan.config_manager import JobConfig
-# from torchtitan.datasets import build_hf_data_loader, build_tokenizer
-# from torchtitan.float8 import Float8Handler
-# from torchtitan.logging import init_logger, logger
-# from torchtitan.metrics import build_device_memory_monitor, build_metric_logger
-# from torchtitan.models import model_name_to_cls, model_name_to_tokenizer, models_config
-# from torchtitan.optimizer import build_lr_schedulers, build_optimizers
-# from torchtitan.parallelisms import (
-#     models_parallelize_fns,
-#     models_pipelining_fns,
-#     ParallelDims,
-# )
-# from torchtitan.profiling import maybe_enable_memory_snapshot, maybe_enable_profiling
-# from torchtitan.utils import device_module, device_type
-
 
 from mmm import utils
 from mmm.checkpoint import CheckpointManager, TrainState
@@ -55,9 +33,9 @@ from mmm.models import (
 )
 from mmm.optimizer import build_lr_schedulers, build_optimizers
 from mmm.parallelisms import (
+    ParallelDims,
     models_parallelize_fns,
     models_pipelining_fns,
-    ParallelDims,
 )
 from mmm.profiling import maybe_enable_memory_snapshot, maybe_enable_profiling
 from mmm.utils import device_module, device_type
@@ -88,6 +66,19 @@ def main(job_config: JobConfig):
     _ = ezpz.setup_torch('DDP', tensor_parallel_size=tpsize)
     world_size = ezpz.get_world_size()
     assert world_size % tpsize == 0, 'WORLD_SIZE must be divisible by TP'
+    if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
+        try:
+            import wandb
+        except Exception as e:
+            logger.exception('Failed to import wandb')
+            raise e
+        fp = Path(__file__)
+        run = ezpz.setup_wandb(project_name=f'mmm.{fp.parent.stem}.{fp.stem}')
+        assert run is not None and run is wandb.run
+        from dataclasses import asdict
+
+        wandb.run.config.update(asdict(job_config))  # type:ignore
+
     dpsize = world_size // tpsize
     # device_mesh = init_device_mesh(
     #    str(ezpz.get_torch_device()),
