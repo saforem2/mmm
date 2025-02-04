@@ -37,10 +37,6 @@ from torch.utils.data import DataLoader
 from mmm.configs import JobConfig, TORCH_DTYPES_MAP
 from mmm.optimizer import OptimizersContainer, SchedulersContainer
 
-# from torchtitan.config_manager import JobConfig, TORCH_DTYPE_MAP
-# from torchtitan.logging import init_logger, logger
-# from torchtitan.optimizer import OptimizersContainer, SchedulersContainer
-
 
 logger = ezpz.get_logger(__name__)
 
@@ -51,9 +47,9 @@ class IntervalType(enum.Enum):
 
 
 class AsyncMode(str, enum.Enum):
-    DISABLED = "disabled"
-    ASYNC = "async"
-    ASYNC_WITH_PINNED_MEM = "async_with_pinned_mem"
+    DISABLED = 'disabled'
+    ASYNC = 'async'
+    ASYNC_WITH_PINNED_MEM = 'async_with_pinned_mem'
 
 
 @dataclass
@@ -73,24 +69,26 @@ class TrainState(Stateful):
         log_steps_bytes = BytesIO()
         torch.save(self.log_steps, log_steps_bytes)
         return {
-            "step": torch.tensor(self.step, dtype=torch.int32),
-            "global_avg_losses": global_avg_losses_bytes,
-            "global_max_losses": global_max_losses_bytes,
-            "log_steps": log_steps_bytes,
+            'step': torch.tensor(self.step, dtype=torch.int32),
+            'global_avg_losses': global_avg_losses_bytes,
+            'global_max_losses': global_max_losses_bytes,
+            'log_steps': log_steps_bytes,
         }
 
     def load_state_dict(self, state_dict) -> None:
-        self.step = state_dict["step"].item()
-        state_dict["global_avg_losses"].seek(0)
+        self.step = state_dict['step'].item()
+        state_dict['global_avg_losses'].seek(0)
         self.global_avg_losses = torch.load(
-            state_dict["global_avg_losses"], weights_only=False
+            state_dict['global_avg_losses'], weights_only=False
         )
-        state_dict["global_max_losses"].seek(0)
+        state_dict['global_max_losses'].seek(0)
         self.global_max_losses = torch.load(
-            state_dict["global_max_losses"], weights_only=False
+            state_dict['global_max_losses'], weights_only=False
         )
-        state_dict["log_steps"].seek(0)
-        self.log_steps = torch.load(state_dict["log_steps"], weights_only=False)
+        state_dict['log_steps'].seek(0)
+        self.log_steps = torch.load(
+            state_dict['log_steps'], weights_only=False
+        )
 
 
 class ModelWrapper(Stateful):
@@ -99,7 +97,9 @@ class ModelWrapper(Stateful):
 
     def state_dict(self) -> Dict[str, Any]:
         return {
-            k: v for sd in map(get_model_state_dict, self.model) for k, v in sd.items()
+            k: v
+            for sd in map(get_model_state_dict, self.model)
+            for k, v in sd.items()
         }
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
@@ -121,30 +121,30 @@ class SaveDone:
 
 def checkpoint_mp(recv, send):
     init_logger()
-    os.environ["MASTER_PORT"] = str(int(os.environ["MASTER_PORT"]) + 2)
-    os.environ["TORCHELASTIC_USE_AGENT_STORE"] = "False"
-    torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
+    os.environ['MASTER_PORT'] = str(int(os.environ['MASTER_PORT']) + 2)
+    os.environ['TORCHELASTIC_USE_AGENT_STORE'] = 'False'
+    torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
     dist.init_process_group()
     try:
         while True:
-            logger.debug("Checkpoint background process is done.")
+            logger.debug('Checkpoint background process is done.')
             send.put(SaveDone())
-            logger.debug("Wait for the new state_dict.")
+            logger.debug('Wait for the new state_dict.')
             obj = recv.get()
-            logger.debug("Received the new state_dict.")
+            logger.debug('Received the new state_dict.')
             if isinstance(obj, Terminate):
-                logger.info("Terminating the checkpoint background process.")
+                logger.info('Terminating the checkpoint background process.')
                 return
             assert isinstance(obj, tuple)
             begin = time.monotonic()
             state, checkpoint_id = obj
             dcp.save(state, checkpoint_id=checkpoint_id)
             logger.info(
-                "Finish saving the checkpoint in the background process in "
-                f"{time.monotonic() - begin:.2f} seconds."
+                'Finish saving the checkpoint in the background process in '
+                f'{time.monotonic() - begin:.2f} seconds.'
             )
     finally:
-        logger.info("Destroying the process group.")
+        logger.info('Destroying the process group.')
         dist.destroy_process_group()
 
 
@@ -194,24 +194,26 @@ class CheckpointManager:
 
         self.states.update(
             {
-                "model": ModelWrapper(model_parts),
-                "optimizer": optimizers,
-                "dataloader": dataloader,
+                'model': ModelWrapper(model_parts),
+                'optimizer': optimizers,
+                'dataloader': dataloader,
             }
         )
         self.states.update(lr_schedulers.get_lr_scheduler_state())
 
-        self.folder = os.path.join(job_config.job.dump_folder, ckpt_config.folder)
+        self.folder = os.path.join(
+            job_config.job.dump_folder, ckpt_config.folder
+        )
         self.interval_type = (
             IntervalType.SECONDS
-            if ckpt_config.interval_type == "seconds"
+            if ckpt_config.interval_type == 'seconds'
             else IntervalType.STEPS
         )
         self.interval = ckpt_config.interval
         self.begin_time = 0
         self.time_sync_work = None
         self.time_sync_result = None
-        self.pg = dist.new_group(backend="gloo")
+        self.pg = dist.new_group(backend='gloo')
 
         self.model_weights_only = ckpt_config.model_weights_only
         self.export_dtype = TORCH_DTYPE_MAP[ckpt_config.export_dtype]
@@ -225,7 +227,7 @@ class CheckpointManager:
             self.async_future = None
         elif async_mode == AsyncMode.ASYNC_WITH_PINNED_MEM:
             self.async_mode = AsyncMode.ASYNC_WITH_PINNED_MEM
-            ctx = get_context("spawn")
+            ctx = get_context('spawn')
             self.mp_queue_send = ctx.Queue()
             self.mp_queue_recv = ctx.Queue()
             self.mp = ctx.Process(
@@ -242,10 +244,12 @@ class CheckpointManager:
             self.staging_id = None
             self.staging_stream = torch.cuda.Stream()
         else:
-            raise ValueError(f"Unkown checkpoint async_mode {ckpt_config.async_mode}")
+            raise ValueError(
+                f'Unkown checkpoint async_mode {ckpt_config.async_mode}'
+            )
 
         logger.info(
-            f"Checkpointing active. Checkpoints will be loaded from and saved to {self.folder}"
+            f'Checkpointing active. Checkpoints will be loaded from and saved to {self.folder}'
         )
 
     def __del__(self):
@@ -257,7 +261,7 @@ class CheckpointManager:
         self.begin_time = time.monotonic()
 
     def _create_checkpoint_id(self, step: int) -> str:
-        return os.path.join(self.folder, f"step-{step}")
+        return os.path.join(self.folder, f'step-{step}')
 
     def _save_last_step(self, curr_step: int) -> None:
         # We only consider saving weights only at the end of the training. So
@@ -270,25 +274,29 @@ class CheckpointManager:
             #      'tok_embeddings.weight':...,
             #      'layers.0.attention.wq.weight': ...
             # }.
-            self.states = self.states["model"].state_dict()
+            self.states = self.states['model'].state_dict()
 
             # For now, we will manually pop the freqs_cis buffer, as we made this permanent
             # temporarily and we don't want to include it in the exported state_dict.
             # Context: https://github.com/pytorch/torchtitan/blob/main/torchtitan/models/llama/model.py#L348
-            self.states.pop("freqs_cis")
+            self.states.pop('freqs_cis')
 
             if self.export_dtype != torch.float32:
                 self.states = {
                     k: v.to(self.export_dtype) for k, v in self.states.items()
                 }
             logger.info(
-                f"Saving a model weights only checkpoint in {self.export_dtype} "
-                f"at last step, step {curr_step}."
+                f'Saving a model weights only checkpoint in {self.export_dtype} '
+                f'at last step, step {curr_step}.'
             )
         else:
-            logger.info(f"Saving a full checkpoint at last step, step {curr_step}.")
+            logger.info(
+                f'Saving a full checkpoint at last step, step {curr_step}.'
+            )
 
-        dcp.save(self.states, checkpoint_id=self._create_checkpoint_id(curr_step))
+        dcp.save(
+            self.states, checkpoint_id=self._create_checkpoint_id(curr_step)
+        )
         self.reset()
 
     def _should_save(self, curr_step: int, force: bool = False) -> bool:
@@ -301,7 +309,9 @@ class CheckpointManager:
             ):
                 return False
             if self.interval_type == IntervalType.SECONDS:
-                time_sync_result = (time.monotonic() - self.begin_time) >= self.interval
+                time_sync_result = (
+                    time.monotonic() - self.begin_time
+                ) >= self.interval
                 self.time_sync_result = torch.tensor(int(time_sync_result))
                 if self.time_sync_work is None:
                     self.time_sync_work = dist.all_reduce(
@@ -328,10 +338,12 @@ class CheckpointManager:
     def _async_wait(self) -> None:
         if self.async_mode == AsyncMode.ASYNC_WITH_PINNED_MEM:
             logger.debug(
-                f"Waiting for the background process to finish, {time.monotonic()=}.:.2f"
+                f'Waiting for the background process to finish, {time.monotonic()=}.:.2f'
             )
             if not self.mp.is_alive():
-                raise RuntimeError("The checkpoint background process is dead.")
+                raise RuntimeError(
+                    'The checkpoint background process is dead.'
+                )
             _ = self.mp_queue_recv.get()
         elif self.async_mode == AsyncMode.ASYNC:
             if self.async_future is not None:
@@ -345,16 +357,16 @@ class CheckpointManager:
             )
         except ImportError as e:
             raise ImportError(
-                "Please install the latest PyTorch nightly to use async checkpointing with pinned memory."
+                'Please install the latest PyTorch nightly to use async checkpointing with pinned memory.'
             ) from e
         state_dict = dcp.state_dict_saver._stateful_to_state_dict(self.states)
         if self.cpu_offload_state_dict is None:
-            logger.debug(f"Preparing the CPU memory, {time.monotonic()=}.:.2f")
+            logger.debug(f'Preparing the CPU memory, {time.monotonic()=}.:.2f')
             self.cpu_offload_state_dict = _create_cpu_state_dict(
                 state_dict, pin_memory=True, share_memory=True
             )
 
-        logger.debug(f"Staging the state_dict, {time.monotonic()=}.:.2f")
+        logger.debug(f'Staging the state_dict, {time.monotonic()=}.:.2f')
         with torch.cuda.stream(self.staging_stream):
             self.cpu_offload_state_dict = _copy_state_dict(
                 state_dict,
@@ -391,8 +403,8 @@ class CheckpointManager:
         self._purge_stale_checkpoints()
 
         logger.info(
-            "Finished saving the checkpoint (or staging if async is enabled)"
-            f"in {time.monotonic() - begin:.2f} seconds."
+            'Finished saving the checkpoint (or staging if async is enabled)'
+            f'in {time.monotonic() - begin:.2f} seconds.'
         )
 
     def maybe_wait_for_staging(self) -> None:
@@ -427,8 +439,10 @@ class CheckpointManager:
         if step == -1:
             step_counts = []
             for filename in os.listdir(self.folder):
-                match = re.search(r"step-(\d+)", filename)
-                metadata_probe = os.path.join(self.folder, filename, ".metadata")
+                match = re.search(r'step-(\d+)', filename)
+                metadata_probe = os.path.join(
+                    self.folder, filename, '.metadata'
+                )
                 if match and os.path.isfile(metadata_probe):
                     step_counts.append(int(match.group(1)))
             if not step_counts:
@@ -436,7 +450,7 @@ class CheckpointManager:
             step = max(step_counts)
 
         # We won't have optimizer states to load, if we are loading a seed checkpoint
-        states = {"model": self.states["model"]} if step == 0 else self.states
+        states = {'model': self.states['model']} if step == 0 else self.states
         # PyTorch bug: (pytorch/pytorch#138575)
         # dcp.load() replaces the values of stateful elements in `states` with new objects
         # from loading the checkpoint, in addition to updating the states of the original
@@ -446,14 +460,14 @@ class CheckpointManager:
         original_stateful_states = {
             k: v for k, v in states.items() if isinstance(v, Stateful)
         }
-        logger.info(f"Loading the checkpoint at step {step}.")
+        logger.info(f'Loading the checkpoint at step {step}.')
         begin = time.monotonic()
         dcp.load(
             states,
             checkpoint_id=self._create_checkpoint_id(step),
         )
         logger.info(
-            f"Finished loading the checkpoint in {time.monotonic() - begin:.2f} seconds."
+            f'Finished loading the checkpoint in {time.monotonic() - begin:.2f} seconds.'
         )
         # bugfix from above: restore the original stateful objects,
         # whose states were already updated in-place by dcp.load()
@@ -464,7 +478,7 @@ class CheckpointManager:
         if self.keep_latest_k > 0:
             discovered_checkpoints = []
             for filename in os.listdir(self.folder):
-                match = re.search(r"step-(\d+)", filename)
+                match = re.search(r'step-(\d+)', filename)
                 path = os.path.join(self.folder, filename)
                 discovered_checkpoints.append((int(match.group(1)), path))
 
@@ -472,5 +486,5 @@ class CheckpointManager:
             to_delete = discovered_checkpoints[: -1 * self.keep_latest_k]
 
             for _, path in to_delete:
-                logger.info(f"Deleting old checkpoint {path}")
+                logger.info(f'Deleting old checkpoint {path}')
                 shutil.rmtree(path, ignore_errors=True)
