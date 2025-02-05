@@ -150,132 +150,433 @@ Explicitly, in my case, these were located at:
 
 
 ```diff
-14a15
->     Union,
-59c60
-<         self.post_optim_event: Optional[torch.cuda.Event] = None
----
->         self.post_optim_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]] = None
-130c131,135
-<                 current_stream = torch.cuda.current_stream()
----
->                 current_stream = (
->                     torch.cuda.current_stream() if torch.cuda.is_available()
->                     else torch.xpu.current_stream()
->                 )
-> 
-294,296c299,306
-<                     torch.cuda.current_stream().wait_event(
-<                         self._comm_ctx.reduce_scatter_state.event
-<                     )
----
->                     if torch.cuda.is_available():
->                         torch.cuda.current_stream().wait_event(
->                             self._comm_ctx.reduce_scatter_state.event
->                         )
->                     elif torch.xpu.is_available():
->                         torch.xpu.current_stream().wait_event(
->                             self._comm_ctx.reduce_scatter_state.event
->                         )
-```
+diff --git a/torch/distributed/_composable/fsdp/_fsdp_state.py b/torch/distributed/_composable/fsdp/_fsdp_state.py
+index ceb480fd239..c4fa73534ee 100644
+--- a/torch/distributed/_composable/fsdp/_fsdp_state.py
++++ b/torch/distributed/_composable/fsdp/_fsdp_state.py
+@@ -12,6 +12,7 @@ from typing import (
+     Set,
+     Tuple,
+     TYPE_CHECKING,
++    Union,
+ )
+ 
+ import torch
+@@ -56,7 +57,7 @@ class FSDPStateContext:
+         self.is_last_backward: bool = True
+         # Optional user-provided event recorded after optimizer for the
+         # all-gather streams to wait on in the root pre-forward
+-        self.post_optim_event: Optional[torch.cuda.Event] = None
++        self.post_optim_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]] = None
+ 
+ 
+ def disable_if_config_true(func):
+@@ -127,7 +128,11 @@ class FSDPState(_State):
+                 self._comm_ctx.all_gather_stream.wait_event(event)
+                 self._state_ctx.post_optim_event = None
+             else:
+-                current_stream = torch.cuda.current_stream()
++                current_stream = (
++                    torch.cuda.current_stream() if torch.cuda.is_available()
++                    else torch.xpu.current_stream()
++                )
++
+                 self._comm_ctx.all_gather_copy_in_stream.wait_stream(current_stream)
+                 self._comm_ctx.all_gather_stream.wait_stream(current_stream)
+             if self._device.type == "cuda":
+@@ -291,9 +296,14 @@ class FSDPState(_State):
+             if self._state_ctx.is_last_backward:
+                 self._comm_ctx.post_forward_order.clear()
+                 if self._comm_ctx.reduce_scatter_state is not None:
+-                    torch.cuda.current_stream().wait_event(
+-                        self._comm_ctx.reduce_scatter_state.event
+-                    )
++                    if torch.cuda.is_available():
++                        torch.cuda.current_stream().wait_event(
++                            self._comm_ctx.reduce_scatter_state.event
++                        )
++                    elif torch.xpu.is_available():
++                        torch.xpu.current_stream().wait_event(
++                            self._comm_ctx.reduce_scatter_state.event
++                        )
+                     self._comm_ctx.reduce_scatter_state = None
+             self._state_ctx.post_backward_final_callback_queued = False
 
+```
 
 ### Diff of `_fsdp_collectives.py`
 
+
 ```diff
-diff _fsdp_collectives_orig.py _fsdp_collectives_new.py
-20c20
-<     all_gather_event: Optional[torch.cuda.Event]
----
->     all_gather_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]]
-131,132c131,132
-<     all_gather_copy_in_stream: torch.cuda.Stream,
-<     all_gather_stream: torch.cuda.Stream,
----
->     all_gather_copy_in_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
->     all_gather_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
-136c136,144
-<     with torch.cuda.stream(all_gather_copy_in_stream):
----
->     if torch.cuda.is_available():
->         agc_cm = torch.cuda.stream(all_gather_copy_in_stream)
->     elif torch.xpu.is_available():
->         agc_cm = torch.xpu.stream(all_gather_copy_in_stream)
->     else:
->         raise RuntimeError("No available device")
->     with agc_cm:
-162c170,182
-<     with torch.cuda.stream(all_gather_stream):
----
->     if torch.cuda.is_available():
->         ags = torch.cuda.stream(all_gather_stream)
->     elif torch.xpu.is_available():
->         ags = torch.xpu.stream(all_gather_stream)
->     else:
->         raise RuntimeError("No available device")
->     with ags:
-247c267,271
-<         torch.cuda.current_stream().wait_event(all_gather_event)
----
->         if torch.cuda.is_available():
->             torch.cuda.current_stream().wait_event(all_gather_event)
->         elif torch.xpu.is_available():
->             torch.xpu.current_stream().wait_event(all_gather_event)
-285c309
-<     reduce_scatter_stream: torch.cuda.Stream,
----
->     reduce_scatter_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
-291c315
-<     all_reduce_stream: torch.cuda.Stream,
----
->     all_reduce_stream: Union[torch.cuda.Stream, torch.xpu.Stream],
-321c345,349
-<     current_stream = torch.cuda.current_stream()
----
->     current_stream = (
->             torch.cuda.current_stream() if torch.cuda.is_available()
->             else torch.xpu.current_stream() if torch.xpu.is_available()
->             else None
->     )
-325c353,361
-<     with torch.cuda.stream(reduce_scatter_stream):
----
->     if torch.cuda.is_available():
->         cm = torch.cuda.stream(reduce_scatter_stream)
->     elif torch.xpu.is_available():
->         reduce_scatter_reduce_op = ReduceOp.SUM
->         cm = torch.xpu.stream(reduce_scatter_stream)
->     else:
->         raise RuntimeError("No available device")
->     with cm:
-358c394,409
-<             with torch.cuda.stream(all_reduce_stream):
----
->             if torch.cuda.is_available():
->                 cm1 = torch.cuda.stream(all_reduce_stream)
->             elif torch.xpu.is_available():
->                 cm1 = torch.xpu.stream(all_reduce_stream)
->             else:
->                 raise RuntimeError("No available device")
->             # with torch.cuda.stream(all_reduce_stream):
->             with cm1:
-364c415,429
-<     with torch.cuda.stream(post_reduce_stream):
----
->     if torch.cuda.is_available():
->         cm2 = torch.cuda.stream(post_reduce_stream)
->     elif torch.xpu.is_available():
->         cm2 = torch.xpu.stream(post_reduce_stream)
->     else:
->         raise RuntimeError("No available device")
->     # with torch.cuda.stream(post_reduce_stream):
->     with cm2:
+diff --git a/torch/distributed/_composable/fsdp/_fsdp_collectives.py b/torch/distributed/_composable/fsdp/_fsdp_collectives.py
+index 4e10f4594c1..45d66775d13 100644
+--- a/torch/distributed/_composable/fsdp/_fsdp_collectives.py
++++ b/torch/distributed/_composable/fsdp/_fsdp_collectives.py
+@@ -15,9 +15,28 @@ from ._fsdp_common import (
+ from ._fsdp_param import FSDPParam, ShardedState
+ 
+ 
++Event = Union[torch.cuda.Event, torch.xpu.Event]
++Stream = Union[torch.cuda.Stream, torch.xpu.Stream]
++
++def get_current_stream() -> Stream:
++    if torch.cuda.is_available():
++        return torch.cuda.current_stream()
++    if torch.xpu.is_available():
++        return torch.xpu.current_stream()
++    raise RuntimeError("No CUDA or XPU device available")
++
++
++def get_stream(stream: Stream) -> Stream:
++    if torch.cuda.is_available():
++        return torch.cuda.stream(stream)
++    if torch.xpu.is_available():
++        return torch.xpu.stream(stream)
++    raise RuntimeError("No CUDA or XPU device available")
++
++
+ class AllGatherResult(NamedTuple):
+     all_gather_output: torch.Tensor
+-    all_gather_event: Optional[torch.cuda.Event]
++    all_gather_event: Optional[Event]
+     all_gather_work: Optional[dist.distributed_c10d.Work]
+     # For each parameter, the all-gather input dtype for each input
+     param_all_gather_input_dtypes: List[List[torch.dtype]]
+@@ -113,6 +132,7 @@ lib.define(
+ 
+ @torch.library.impl(lib, "chunk_cat", "Meta")
+ @torch.library.impl(lib, "chunk_cat", "CUDA")
++@torch.library.impl(lib, "chunk_cat", "XPU")
+ @torch.library.impl(lib, "chunk_cat", "CPU")
+ def chunk_cat(
+     tensors: List[torch.Tensor],
+@@ -128,12 +148,12 @@ def foreach_all_gather(
+     fsdp_params: List[FSDPParam],
+     group: dist.ProcessGroup,
+     async_op: bool,
+-    all_gather_copy_in_stream: torch.cuda.Stream,
+-    all_gather_stream: torch.cuda.Stream,
++    all_gather_copy_in_stream: Stream,
++    all_gather_stream: Stream,
+     device: torch.device,
+ ) -> Optional[AllGatherResult]:
+     world_size, rank = group.size(), group.rank()
+-    with torch.cuda.stream(all_gather_copy_in_stream):
++    with get_stream(all_gather_copy_in_stream):
+         param_all_gather_inputs = _get_param_all_gather_inputs(fsdp_params)
+         (
+             param_all_gather_input_dtypes,
+@@ -159,7 +179,7 @@ def foreach_all_gather(
+         )
+         del param_all_gather_inputs
+     all_gather_stream.wait_stream(all_gather_copy_in_stream)
+-    with torch.cuda.stream(all_gather_stream):
++    with get_stream(all_gather_stream):
+         all_gather_work = dist.all_gather_into_tensor(
+             output_tensor=all_gather_output,
+             input_tensor=all_gather_input,
+@@ -244,7 +264,7 @@ def foreach_all_gather_copy_out(
+         all_gather_input_split_sizes,
+     ) = all_gather_result
+     if all_gather_event is not None:  # sync op
+-        torch.cuda.current_stream().wait_event(all_gather_event)
++        get_current_stream().wait_event(all_gather_event)
+     if isinstance(all_gather_work, dist.distributed_c10d.Work):  # async op
+         all_gather_work.wait()
+     world_size, device = group.size(), all_gather_output.device
+@@ -282,16 +302,16 @@ def foreach_reduce(
+     fsdp_params: List[FSDPParam],
+     unsharded_grads: List[torch.Tensor],
+     reduce_scatter_group: dist.ProcessGroup,
+-    reduce_scatter_stream: torch.cuda.Stream,
++    reduce_scatter_stream: Stream,
+     orig_dtype: torch.dtype,
+     reduce_dtype: Optional[torch.dtype],
+     device: torch.device,
+     reduce_scatter_reduce_op: Optional[Union[dist.ReduceOp, dist.ReduceOp.RedOpType]],
+     all_reduce_group: Optional[dist.ProcessGroup],  # not `None` iff HSDP
+-    all_reduce_stream: torch.cuda.Stream,
++    all_reduce_stream: Stream,
+     all_reduce_grads: bool,
+     partial_reduce_output: Optional[torch.Tensor],  # only used for HSDP
+-) -> Tuple[torch.Tensor, torch.cuda.Event, torch.cuda.Event, Optional[torch.Tensor]]:
++) -> Tuple[torch.Tensor, Event, Event, Optional[torch.Tensor]]:
+     """
+     ``unsharded_grads`` owns the references to the gradients computed by
+     autograd, so clearing the list frees the gradients.
+@@ -318,11 +338,23 @@ def foreach_reduce(
+         (reduce_scatter_input_numel,), dtype=reduce_dtype, device=device
+     )
+     foreach_reduce_scatter_copy_in(unsharded_grads, reduce_scatter_input, world_size)
+-    current_stream = torch.cuda.current_stream()
++    current_stream = get_current_stream()
+     # Only after the copy-in finishes can we free the gradients
+     unsharded_grads.clear()
+     reduce_scatter_stream.wait_stream(current_stream)
+-    with torch.cuda.stream(reduce_scatter_stream):
++    # with get_strem(reduce_scatter_stream):
++    if torch.cuda.is_available():
++        cm = torch.cuda.stream(reduce_scatter_stream)
++    elif torch.xpu.is_available():
++        # NOTE: The `predivide_factor` below is necessary since the `ReduceOp.AVG` is not supported on XPU.
++        # Explicitly, it crashes with:
++        #     RuntimeError: Cannot use ReduceOp.AVG with XPU
++        # TODO: Fix this / replace the predivide_factor by the size of the reduce_scatter_group
++        predivide_factor = reduce_scatter_group.size()
++        cm = torch.xpu.stream(reduce_scatter_stream)
++    else:
++        raise RuntimeError("No available device")
++    with cm:
+         reduce_output = reduce_scatter_input.new_empty((reduce_scatter_output_numel,))
+         _div_if_needed(reduce_scatter_input, predivide_factor)
+         if reduce_scatter_reduce_op is None:
+@@ -355,13 +387,27 @@ def foreach_reduce(
+                 reduce_output += partial_reduce_output
+             post_reduce_stream = all_reduce_stream
+             all_reduce_stream.wait_stream(reduce_scatter_stream)
+-            with torch.cuda.stream(all_reduce_stream):
++            if torch.cuda.is_available():
++                cm1 = torch.cuda.stream(all_reduce_stream)
++            elif torch.xpu.is_available():
++                cm1 = torch.xpu.stream(all_reduce_stream)
++            else:
++                raise RuntimeError("No available device")
++            # with get_stream(all_reduce_stream):
++            with cm1:
+                 dist.all_reduce(
+                     reduce_output,
+                     group=all_reduce_group,
+                     op=ReduceOp.AVG if predivide_factor is None else ReduceOp.SUM,
+                 )
+-    with torch.cuda.stream(post_reduce_stream):
++    # with get_stream(post_reduce_stream):
++    if torch.cuda.is_available():
++        cm2 = torch.cuda.stream(post_reduce_stream)
++    elif torch.xpu.is_available():
++        cm2 = torch.xpu.stream(post_reduce_stream)
++    else:
++        raise RuntimeError("No available device")
++    with cm2:
+         _div_if_needed(reduce_output, postdivide_factor)
+         reduce_output = _to_dtype_if_needed(reduce_output, orig_dtype)
+         # View out and accumulate sharded gradients
 ```
 
-## Working
+
+### Diff of `_fsdp_param_group`
+
+
+```diff
+diff --git a/torch/distributed/_composable/fsdp/_fsdp_param_group.py b/torch/distributed/_composable/fsdp/_fsdp_param_group.py
+index 3cb4a31c28d..351affaad98 100644
+--- a/torch/distributed/_composable/fsdp/_fsdp_param_group.py
++++ b/torch/distributed/_composable/fsdp/_fsdp_param_group.py
+@@ -1,7 +1,7 @@
+ # mypy: allow-untyped-defs
+ import contextlib
+ import logging
+-from typing import Any, cast, Dict, List, NamedTuple, Optional, Set, Tuple
++from typing import Any, Union, cast, Dict, List, NamedTuple, Optional, Set, Tuple
+ 
+ import torch
+ import torch._dynamo.compiled_autograd as ca
+@@ -39,31 +39,90 @@ group free it after its copy-in. Finally, we have the last FSDP state flush the
+ reference to avoid holding onto memory after forward.
+ """
+ 
++Event = Union[torch.cuda.Event, torch.xpu.Event]
++Stream = Union[torch.cuda.Stream, torch.xpu.Stream]
++
++def get_current_stream() -> Stream:
++    if torch.cuda.is_available():
++        return torch.cuda.current_stream()
++    if torch.xpu.is_available():
++        return torch.xpu.current_stream()
++    raise RuntimeError("No CUDA or XPU device available")
++
++
++def get_stream(stream: Optional[Stream], priority: Optional[int] = None) -> Stream:
++    if torch.cuda.is_available():
++        if stream is None:
++            return torch.cuda.stream(priority)
++        return torch.cuda.stream(stream, priority)
++    if torch.xpu.is_available():
++        if stream is None:
++            return torch.xpu.stream(priority)
++        return torch.xpu.stream(stream, priority)
++    raise RuntimeError("No CUDA or XPU device available")
++
++
++def get_empty_stream() -> Stream:
++    if torch.cuda.is_available():
++        return torch.cuda.stream(None)
++    if torch.xpu.is_available():
++        return torch.xpu.stream(None)
++    raise RuntimeError("No CUDA or XPU device available")
++
++
++def get_event():
++    if torch.cuda.is_available():
++        return torch.cuda.Event()
++    if torch.xpu.is_available():
++        return torch.xpu.Event()
++    raise RuntimeError("No CUDA or XPU device available")
++
+ 
+ class FSDPCommContext:
+     """This has the communication state shared across FSDP states/parameter groups."""
+ 
+     def lazy_init(self):
+-        if not torch.cuda.is_available():
+-            raise RuntimeError("FSDP requires CUDA for streams")
++        self.device_type = 'cuda'
++        if not torch.cuda.is_available() and torch.xpu.is_available():
++            logger.info(f'Using XPU for streams!!')
++            self.device_type = 'xpu'
++
++        # if not torch.cuda.is_available():
++        #     raise RuntimeError("FSDP requires CUDA for streams")
+         # Setting the all-gather/reduce-scatter streams to be higher priority
+         # can help avoid some issues where their copies in/out are delayed and
+         # block computation (this is different from high-pri NCCL streams)
+         high_priority = -1
+-        # All-gather state and copy-in stream allow overlapping the next
+-        # copy-in with the current all-gather in forward; copy-in overlaps with
+-        # reduce-scatter in backward without the separate copy-in stream
+-        self.all_gather_copy_in_stream = torch.cuda.Stream(priority=high_priority)
+-        # All-gather stream allows overlapping next all-gather with current
+-        # forward compute
+-        self.all_gather_stream = torch.cuda.Stream(priority=high_priority)
+-        # Reduce-scatter stream gives separate execution "thread" for post-
+-        # backward logic like pre/post-gradient division and reduce-scatter
+-        self.reduce_scatter_stream = torch.cuda.Stream(priority=high_priority)
+-        # Run the HSDP all-reduces concurrently with all-gather/reduce-scatter
+-        # since collectives use different network resources and can overlap
+-        # in the typical intra-node sharding / inter-node replication case
+-        self.all_reduce_stream = torch.cuda.Stream()
++        if self.device_type == 'cuda' and torch.cuda.is_available():
++            # All-gather state and copy-in stream allow overlapping the next
++            # copy-in with the current all-gather in forward; copy-in overlaps with
++            # reduce-scatter in backward without the separate copy-in stream
++            self.all_gather_copy_in_stream = torch.cuda.Stream(priority=high_priority)
++            # All-gather stream allows overlapping next all-gather with current
++            # forward compute
++            self.all_gather_stream = torch.cuda.Stream(priority=high_priority)
++            # Reduce-scatter stream gives separate execution "thread" for post-
++            # backward logic like pre/post-gradient division and reduce-scatter
++            self.reduce_scatter_stream = torch.cuda.Stream(priority=high_priority)
++            # Run the HSDP all-reduces concurrently with all-gather/reduce-scatter
++            # since collectives use different network resources and can overlap
++            # in the typical intra-node sharding / inter-node replication case
++            self.all_reduce_stream = torch.cuda.Stream()
++        elif self.device_type == 'xpu' and torch.xpu.is_available():
++            # All-gather state and copy-in stream allow overlapping the next
++            # copy-in with the current all-gather in forward; copy-in overlaps with
++            # reduce-scatter in backward without the separate copy-in stream
++            self.all_gather_copy_in_stream = torch.xpu.Stream(priority=high_priority)
++            # All-gather stream allows overlapping next all-gather with current
++            # forward compute
++            self.all_gather_stream = torch.xpu.Stream(priority=high_priority)
++            # Reduce-scatter stream gives separate execution "thread" for post-
++            # backward logic like pre/post-gradient division and reduce-scatter
++            self.reduce_scatter_stream = torch.xpu.Stream(priority=high_priority)
++            # Run the HSDP all-reduces concurrently with all-gather/reduce-scatter
++            # since collectives use different network resources and can overlap
++            # in the typical intra-node sharding / inter-node replication case
++            self.all_reduce_stream = torch.xpu.Stream()
+         # All-gather/reduce-scatter states keep references to collective
+         # tensors produced in one stream and used in another and accompanying
+         # CUDA events for synchronization
+@@ -78,19 +137,19 @@ class FSDPCommContext:
+         if training_state in (TrainingState.FORWARD, TrainingState.PRE_BACKWARD):
+             # Use separate streams for implicit prefetching
+             return self.all_gather_copy_in_stream, self.all_gather_stream
+-        current_stream = torch.cuda.current_stream()
++        current_stream = get_current_stream()
+         return current_stream, current_stream
+ 
+ 
+ # See [Note: Overlapping all-gather copy-in and all-gather]
+ class AllGatherState(NamedTuple):
+     all_gather_result: AllGatherResult
+-    event: torch.cuda.Event  # all-gather copy-out
++    event: Event  # all-gather copy-out
+ 
+ 
+ class ReduceScatterState(NamedTuple):
+     reduce_scatter_input: torch.Tensor
+-    event: torch.cuda.Event  # reduce-scatter event
++    event: Event  # reduce-scatter event
+ 
+ 
+ class FSDPParamGroup:
+@@ -162,10 +221,10 @@ class FSDPParamGroup:
+         # Holds the reduce-scatter/all-reduce view-out CUDA event that marks the end of
+         # the group's post-backward (e.g. reduce-scatter, all-reduce and div), which
+         # should be waited on at the end of backward
+-        self._post_reduce_event: Optional[torch.cuda.Event] = None
++        self._post_reduce_event: Optional[Event] = None
+         # Holds the reshard-after-forward CUDA event when resharding to a
+         # different world size, which should be waited on in the next unshard
+-        self._reshard_after_forward_event: Optional[torch.cuda.Event] = None
++        self._reshard_after_forward_event: Optional[Event] = None
+ 
+         # Only for HSDP, if accumulating gradients without all-reduce, save the
+         # partial reduce output (only reduce-scattered but not all-reduced)
+@@ -262,7 +321,7 @@ class FSDPParamGroup:
+         for fsdp_param in self.fsdp_params:
+             fsdp_param.init_unsharded_param()
+         self._to_unsharded()
+-        all_gather_copy_out_event = torch.cuda.Event()
++        all_gather_copy_out_event = get_event()
+         all_gather_copy_out_event.record()
+         if self._training_state == TrainingState.FORWARD:
+             self.comm_ctx.all_gather_state = AllGatherState(
+@@ -272,7 +331,7 @@ class FSDPParamGroup:
+             self._wait_all_gather_streams_on_event(all_gather_copy_out_event)
+         self._all_gather_result = None  # free unless saved in `all_gather_state`
+ 
+-    def _wait_all_gather_streams_on_event(self, event: torch.cuda.Event):
++    def _wait_all_gather_streams_on_event(self, event: Event):
+         # Calling `unshard` before lazy init means streams are not initialized
+         if hasattr(self.comm_ctx, "all_gather_copy_in_stream"):
+             self.comm_ctx.all_gather_copy_in_stream.wait_event(event)
+@@ -285,7 +344,7 @@ class FSDPParamGroup:
+                 return
+             if self._use_post_forward_mesh:
+                 self._to_sharded_post_forward()
+-                self._reshard_after_forward_event = torch.cuda.Event()
++                self._reshard_after_forward_event = get_event()
+                 self._reshard_after_forward_event.record()
+                 return
+         self._to_sharded()
+@@ -365,7 +424,7 @@ class FSDPParamGroup:
+             return
+         with record_function(self._with_fqn("FSDP::post_backward_reduce")):
+             if self.comm_ctx.reduce_scatter_state is not None:
+-                torch.cuda.current_stream().wait_event(
++                get_current_stream().wait_event(
+                     self.comm_ctx.reduce_scatter_state.event
+                 )
+                 self.comm_ctx.reduce_scatter_state = None
+@@ -394,7 +453,7 @@ class FSDPParamGroup:
+ 
+     def finalize_backward(self):
+         if self._post_reduce_event is not None:
+-            torch.cuda.current_stream().wait_event(self._post_reduce_event)
++            get_current_stream().wait_event(self._post_reduce_event)
+             self._post_reduce_event = None
+         for fsdp_param in self.fsdp_params:
+             if fsdp_param.grad_offload_event is not None:
+```
+
+## ✅ Verify Fix
+
+
+### 🦙 Llama-3.1-8B on Aurora
 
 ```bash
-$ PYTORCH_ENABLE_XPU_FALLBACK=1 WORLD_SIZE=12 yeet python3 -m mmm.train --job.config_file train_configs/llama3_8b.toml | tee train-llama3-8b-$(tstamp).log
+PYTORCH_ENABLE_XPU_FALLBACK=1 mpiexec -n 12 -np 12 python3 -m mmm.train --job.config_file train_configs/llama3_8b.toml | tee train-llama3-8b-$(tstamp).log
 ```
 
 <details closed><summary>Full Output</summary>
@@ -392,9 +693,7 @@ $ PYTORCH_ENABLE_XPU_FALLBACK=1 WORLD_SIZE=12 yeet python3 -m mmm.train --job.co
    </details>
 
 
-# Running on Polaris
-
-### LLama3 on Polaris
+### 🦙 Llama-3.1-8B on Polaris
 
 I've confirmed independently that this code also runs as expected on Polaris.
 
