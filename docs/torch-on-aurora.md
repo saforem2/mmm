@@ -366,7 +366,7 @@ index 4e10f4594c1..45d66775d13 100644
 </details>
 
 
-### Diff of `_fsdp_param_group`
+### Diff of `_fsdp_param_group.py`
 
 <details closed><summary>Diff</summary>
 
@@ -702,7 +702,7 @@ PYTORCH_ENABLE_XPU_FALLBACK=1 mpiexec -n 12 -np 12 python3 -m mmm.train --job.co
 
 I've confirmed independently that this code also runs as expected on Polaris.
 
-See [🦙 Llama 3](https://github.com/saforem2/mmm/blob/main/README.md#-llama3)
+See [Llama 3](https://github.com/saforem2/mmm/blob/main/README.md#-llama3)
 for more details.
 
 - Launch training:
