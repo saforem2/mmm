@@ -1,5 +1,7 @@
 # Torch on Aurora
 
+
+
 ## Current Issue
 
 With the most recent `pytorch==2.5` on Aurora, the following error is thrown
@@ -390,3 +392,93 @@ $ PYTORCH_ENABLE_XPU_FALLBACK=1 WORLD_SIZE=12 yeet python3 -m mmm.train --job.co
     ```
 
 </details>
+
+
+# Running on Polaris
+
+I've confirmed independently that this code also runs as expected on Polaris.
+
+See [🦙 Llama 3](https://github.com/saforem2/mmm/blob/main/README.md#-llama3)
+for more details.
+
+1. Launch training:
+
+    ```bash
+    launch python3 -m mmm.train --job.config_file train_configs/llama3_8b.toml --training.seq_len=2048
+    ```
+
+    Note that `--training.seq_len=2048` is needed since `4096` didn't fit on
+    the 40GB A100s of Polaris 
+
+    <details closed><summary>Output:</summary>
+
+    <details closed><summary>Polaris @ ALCF:</summary>
+
+    ```bash
+    launch python3 -Wignore -m mmm.train --job.config_file train_configs/llama3_8b.toml --training.seq_len=2048 | tee train-llama3-8b.log
+    ```
+
+    ```python
+    Connected to tcp://x3005c0s37b1n0.hsn.cm.polaris.alcf.anl.gov:7919
+    Found executable /eagle/argonne_tpc/foremans/projects/saforem2/mmm/venvs/2024-04-29/bin/python3
+    Launching application a95db38c-5a1f-4f20-a362-6cd48cc0f009
+    Using PMI port 40193,40194
+    [2025-02-03 09:19:25][I][datasets/config:54:datasets] PyTorch version 2.6.0+cu124 available.
+    [2025-02-03 09:19:25][I][datasets/config:112:datasets] TensorFlow version 2.16.1 available.
+    [2025-02-03 09:19:25][I][datasets/config:125:datasets] JAX version 0.4.26 available.
+    [2025-02-03 09:19:41][I][mmm/train:71:__main__] Starting job: Llama 3 8B training
+    [rank4]:[W203 09:19:41.475782740 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 4]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank0]:[W203 09:19:41.501737516 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank7]:[W203 09:19:42.070718085 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 7]  using GPU 3 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank5]:[W203 09:19:42.071337647 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 5]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank6]:[W203 09:19:42.071862543 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 6]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank2]:[W203 09:19:42.067891022 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank3]:[W203 09:19:42.068768126 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 3]  using GPU 3 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [rank1]:[W203 09:19:42.069066595 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in ba
+    rrier() to force use of a particular device, or call init_process_group() with a device_id.
+    [2025-02-03 09:19:43][I][ezpz/dist:823] Using device='cuda' with backend='DDP' + 'nccl' for distributed training.
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s37b1n0'][2/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s37b1n0'][1/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s7b0n0'][4/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s7b0n0'][6/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s7b0n0'][5/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s37b1n0'][3/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s7b0n0'][7/7]
+    [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s37b1n0'][0/7]
+    
+    [2025-02-03 09:19:43][I][mmm/utils:298] Process group already initialized, skipping init_process_group
+    [2025-02-03 09:19:43][W][mmm/utils:361] Peak flops undefined for: cuda, fallback to A100
+    [2025-02-03 09:19:43][I][mmm/train:113:__main__] Peak FLOPS used for computing MFU: 3.120e+14
+    [2025-02-03 09:19:43][I][parallelisms/parallel_dims:80:mmm.parallelisms.parallel_dims] Building 1-D device mesh with ['dp_shard'], [8]
+    [2025-02-03 09:19:43][I][tokenizer/__init__:18:mmm.data.tokenizer] Building tiktoken tokenizer locally from ./tests/assets/test_tiktoken.model
+    [2025-02-03 09:19:44][I][tokenizer/tiktoken:92:mmm.data.tokenizer.tiktoken] TikTokenizer built: #words 128256, BOS ID 128000, EOS ID 128001
+    [2025-02-03 09:19:44][I][data/hf_datasets:73:mmm.data.hf_datasets] Preparing c4 dataset from allenai/c4
+    [2025-02-03 09:19:49][I][mmm/train:165:__main__] Building llama3 8B with ModelArgs(dim=4096, n_layers=32, n_heads=32, n_kv_heads=8, vocab_size=128256, multiple_of=1024, ffn_dim_multiplier=1.3, norm_eps=1e-05, rope_theta=500000, max_seq_len=2048, depth_init=True, norm_type='rmsnorm')
+    [2025-02-03 09:19:50][I][mmm/train:181:__main__] Model llama3 8B size: 8,030,261,248 total parameters
+    [2025-02-03 09:19:50][I][parallelisms/parallelize_llama:309:mmm.parallelisms.parallelize_llama] Applied selective activation checkpointing to the model
+    [2025-02-03 09:19:50][I][parallelisms/parallelize_llama:114:mmm.parallelisms.parallelize_llama] Applied FSDP to the model
+    [2025-02-03 09:19:51][E][mmm/train:241:__main__] Error getting memory stats: name 'device_memory_monitor' is not defined
+    [2025-02-03 09:19:51][I][mmm/metrics:128] TensorBoard logging enabled. Logs will be saved at ./outputs/tb/20250203-0919
+    [2025-02-03 09:19:51][E][mmm/train:296:__main__] Error resetting memory stats: name 'device_memory_monitor' is not defined
+    [2025-02-03 09:19:51][I][mmm/train:300:__main__] Training starts at step 1, with local batch size 1, global batch size 8, sequence length 2048, total steps 1000 (warmup 200)
+    [2025-02-03 09:19:51][I][mmm/profiling:59] Profiling active. Traces will be saved at ./outputs/profile_trace
+    [2025-02-03 09:20:14][E][mmm/train:438:__main__] Error getting memory stats: name 'device_memory_monitor' is not defined
+    [2025-02-03 09:20:14][I][mmm/train:458:__main__] step=1 global_avg_loss=12.269001 global_max_loss=12.310555 throughput(tps)=86.019928 mfu(%)=1.330297 end_to_end(s)=2.380844 data_loading(s)=0.900774 data_loading(%)=3.783424
+    [2025-02-03 09:20:14][E][mmm/train:498:__main__] Error resetting memory stats: name 'device_memory_monitor' is not defined
+    [2025-02-03 09:20:14][I][mmm/utils:171] Synchronizing and adjusting timeout for all ProcessGroups to 0:01:40
+    
+    [2025-02-03 09:22:59][I][mmm/train:458:__main__] step=10 global_avg_loss=11.101408 global_max_loss=12.190623 throughput(tps)=112.290594 mfu(%)=1.736573 end_to_end(s)=16.414554 data_loading(s)=0.003078 data_loading(%)=0.016878
+    [2025-02-03 09:26:05][I][mmm/train:458:__main__] step=20 global_avg_loss=9.304403 global_max_loss=10.041307 throughput(tps)=110.054333 mfu(%)=1.701989 end_to_end(s)=18.608990 data_loading(s)=0.002827 data_loading(%)=0.015190
+    [2025-02-03 09:29:13][I][mmm/train:458:__main__] step=30 global_avg_loss=8.363521 global_max_loss=10.094500 throughput(tps)=109.026794 mfu(%)=1.686098 end_to_end(s)=18.784373 data_loading(s)=0.003182 data_loading(%)=0.016937
+    [2025-02-03 09:32:18][I][mmm/train:458:__main__] step=40 global_avg_loss=7.754060 global_max_loss=10.717106 throughput(tps)=110.327183 mfu(%)=1.706209 end_to_end(s)=18.562968 data_loading(s)=0.003432 data_loading(%)=0.018489
+    [2025-02-03 09:35:28][I][mmm/train:458:__main__] step=50 global_avg_loss=7.405908 global_max_loss=11.071878 throughput(tps)=108.140150 mfu(%)=1.672386 end_to_end(s)=18.938387 data_loading(s)=0.002782 data_loading(%)=0.014690
+    [2025-02-03 09:38:32][I][mmm/train:458:__main__] step=60 global_avg_loss=7.379553 global_max_loss=16.768843 throughput(tps)=111.114522 mfu(%)=1.718385 end_to_end(s)=18.431434 data_loading(s)=0.002796 data_loading(%)=0.015172
+    [2025-02-03 09:41:36][I][mmm/train:458:__main__] step=70 global_avg_loss=7.180877 global_max_loss=8.136713 throughput(tps)=111.323097 mfu(%)=1.721611 end_to_end(s)=18.396901 data_loading(s)=0.003316 data_loading(%)=0.018022
+    [2025-02-03 09:44:40][I][mmm/train:458:__main__] step=80 global_avg_loss=6.949995 global_max_loss=8.055350 throughput(tps)=111.244684 mfu(%)=1.720398 end_to_end(s)=18.409868 data_loading(s)=0.003094 data_loading(%)=0.016804
+    [2025-02-03 09:47:47][I][mmm/train:458:__main__] step=90 global_avg_loss=6.984058 global_max_loss=8.244547 throughput(tps)=109.736104 mfu(%)=1.697068 end_to_end(s)=18.662955 data_loading(s)=0.003001 data_loading(%)=0.016082
+    [2025-02-03 09:50:52][I][mmm/train:458:__main__] step=100 global_avg_loss=6.869817 global_max_loss=8.179618 throughput(tps)=110.670108 mfu(%)=1.711512 end_to_end(s)=18.505449 data_loading(s)=0.008446 data_loading(%)=0.045638
+    ```
+
+    </details>
+
+    </details>
