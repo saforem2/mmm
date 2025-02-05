@@ -73,24 +73,65 @@ when trying to run the [`mmm/train.py`](src/mmm/train.py) script.
 
     </details>
 
+## Envionment Information
+
+
+- PyTorch Version: `2.5.1+cxx11.abi`
+
+    ```bash
+    $ python3 -c 'import torch; print(torch.__version__); print(torch.xpu.is_available())'
+    2.5.1+cxx11.abi
+    True
+    ```
+
+- Relevant python packages:
+
+    ```bash
+    $ python3 -m pip list | egrep "deep|torch|intel|ccl"
+    intel-cmplr-lib-rt          2025.0.4
+    intel-cmplr-lib-ur          2025.0.4
+    intel-cmplr-lic-rt          2025.0.4
+    intel_extension_for_pytorch 2.5.10+xpu
+    intel-opencl-rt             2025.0.4
+    intel-openmp                2025.0.4
+    intel-pti                   0.10.0
+    intel-sycl-rt               2025.0.4
+    oneccl                      2021.14.1
+    oneccl-bind-pt              2.5.0+xpu
+    oneccl-devel                2021.14.1
+    torch                       2.5.1+cxx11.abi
+    torchaudio                  2.5.1+cxx11.abi
+    torchdata                   0.10.1
+    torchinfo                   1.8.0
+    torchvision                 0.20.1+cxx11.abi
+    ```
+
+- Loaded Modules:
+
+    ```bash
+    $ module list
+
+    Currently Loaded Modules:
+      1) libfabric/1.20.1
+      2) cray-pals/1.4.0
+      3) cray-libpals/1.4.0
+      4) gcc-runtime/12.2.0-267awrk
+      5) gmp/6.2.1-yctcuid
+      6) mpfr/4.2.1-fhgnwe7
+      7) mpc/1.3.1-ygprpb4
+      8) gcc/12.2.0
+      9) hwloc/master-git.1793e43-level-zero
+      10) yaksa/0.3-aw2kkvy
+      11) mpich/opt/4.3.0rc3
+      12) intel_compute_runtime/release/1057.13
+      13) oneapi/release/2025.0.5
+    ```
+
 
 ## Fix
 
 In order to get the full [`mmm/train.py`](src/mmm/train.py) script to work on
 Aurora we need to make some changes to the pytorch source code.
-
-To be able to modify the pytorch source code, we need to install pytorch into a
-virtual environment.
-
-```bash
-source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
-ezpz_setup_env
-python3 -m pip install --require-virtualenv \
-  torch==2.5.0 \
-  intel-extension-for-pytorch==2.5.0 \
-  oneccl_bind_pt==2.5.0 \
-  --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
-```
 
 In particular we need to change:
 
@@ -105,7 +146,41 @@ Explicitly, in my case, these were located at:
 /lus/flare/projects/Aurora_deployment/foremans/micromamba/envs/anl_2024_12_release_2/lib/python3.10/site-packages/torch/distributed/_composable/fsdp/
 ```
 
-### `_fsdp_collectives.py`
+#### Diff of `_fsdp_state.py`
+
+
+```diff
+14a15
+>     Union,
+59c60
+<         self.post_optim_event: Optional[torch.cuda.Event] = None
+---
+>         self.post_optim_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]] = None
+130c131,135
+<                 current_stream = torch.cuda.current_stream()
+---
+>                 current_stream = (
+>                     torch.cuda.current_stream() if torch.cuda.is_available()
+>                     else torch.xpu.current_stream()
+>                 )
+> 
+294,296c299,306
+<                     torch.cuda.current_stream().wait_event(
+<                         self._comm_ctx.reduce_scatter_state.event
+<                     )
+---
+>                     if torch.cuda.is_available():
+>                         torch.cuda.current_stream().wait_event(
+>                             self._comm_ctx.reduce_scatter_state.event
+>                         )
+>                     elif torch.xpu.is_available():
+>                         torch.xpu.current_stream().wait_event(
+>                             self._comm_ctx.reduce_scatter_state.event
+>                         )
+```
+
+
+#### Diff of `_fsdp_collectives.py`
 
 ```diff
 diff _fsdp_collectives_orig.py _fsdp_collectives_new.py
@@ -196,41 +271,6 @@ diff _fsdp_collectives_orig.py _fsdp_collectives_new.py
 >     # with torch.cuda.stream(post_reduce_stream):
 >     with cm2:
 ```
-
-
-### `_fsdp_state.py`
-
-
-```diff
-14a15
->     Union,
-59c60
-<         self.post_optim_event: Optional[torch.cuda.Event] = None
----
->         self.post_optim_event: Optional[Union[torch.cuda.Event, torch.xpu.Event]] = None
-130c131,135
-<                 current_stream = torch.cuda.current_stream()
----
->                 current_stream = (
->                     torch.cuda.current_stream() if torch.cuda.is_available()
->                     else torch.xpu.current_stream()
->                 )
-> 
-294,296c299,306
-<                     torch.cuda.current_stream().wait_event(
-<                         self._comm_ctx.reduce_scatter_state.event
-<                     )
----
->                     if torch.cuda.is_available():
->                         torch.cuda.current_stream().wait_event(
->                             self._comm_ctx.reduce_scatter_state.event
->                         )
->                     elif torch.xpu.is_available():
->                         torch.xpu.current_stream().wait_event(
->                             self._comm_ctx.reduce_scatter_state.event
->                         )
-```
-
 
 ## Working
 
