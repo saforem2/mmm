@@ -2,15 +2,13 @@
 
 ## Current Issue
 
-With the most recent `pytorch==2.5` on Aurora, the following error is thrown
-when trying to run the [`mmm/train.py`](src/mmm/train.py) script.
+With the most recent `torch==2.5.1+cxx11.abi` on Aurora, the following error is
+thrown when trying to run the [`mmm/train.py`](src/mmm/train.py) script.
 
 - Executing:
 
     ```bash
-    #[🐍 anl_2024_12_release_2](👻 anl_2024_12_release_2)
-    #[01:27:36 PM][x4512c5s2b0n0][/f/A/f/p/s/mmm][🌱 main][📦📝🤷✓] [⏱️ 19s]
-    $ mpiexec -n 12 --hostfile nodefile python3 -m mmm.train --job.config_file train_configs/debug_model.toml
+    mpiexec -n 12 --hostfile nodefile python3 -m mmm.train --job.config_file train_configs/debug_model.toml
     ```
 
 - Crashes with:
