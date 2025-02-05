@@ -85,6 +85,110 @@ class TrainArgs:
     cuda_sdpa_backend: Optional[str] = field(default_factory=str)
 
 
+@dataclass
+class ProfilingConfig:
+    enable_profiling: bool = False
+    save_traces_folder: str = 'profile_traces'
+    profile_freq: int = 10
+    enable_memory_snapshot: bool = False
+    save_memory_snapshot_folder: str = 'memory_snapshot'
+
+
+@dataclass
+class MetricsConfig:
+    log_freq: int = 10
+    enable_tensorboard: bool = False
+    disable_color_printing: bool = False
+    save_tb_folder: str = 'tb'
+    rank_0_only: bool = True
+    enable_wandb: bool = False
+
+
+@dataclass
+class ModelConfig:
+    name: str = 'llama'
+    flavor: str = 'debugmodel'
+    norm_type: str = 'rmsnorm'
+    tokenizer_path: str = 'data/tokenizer/tokenizer.model'
+
+
+@dataclass
+class OptimizerConfig:
+    name: str = 'AdamW'
+    lr: float = 8e-4
+    fused: bool = False
+    early_step_in_backward: bool = False
+
+
+@dataclass
+class TrainingConfig:
+    dataset: str = 'c4_mini'
+    dataset_path: Optional[str] = None
+    batch_size: int = 8
+    seq_len: int = 2048
+    warmup_steps: int = 200
+    max_norm: float = 1.0
+    steps: int = 10000
+    data_parallel_replicate_degree: int = 1
+    data_parallel_shard_degree: int = -1
+    enable_cpu_offload: bool = False
+    tensor_parallel_degree: int = 1
+    disable_loss_parallel: bool = False
+    enable_async_tensor_parallel: bool = False
+    pipeline_parallel_degree: int = 1
+    pipeline_parallel_split_points: list[str] = field(default_factory=list)
+    pipeline_parallel_schedule: str = '1F1B'
+    pipeline_parallel_schedule_csv: str = ''
+    pipeline_parallel_microbatches: Optional[int] = None
+    enable_compiled_autograd: bool = False
+    context_parallel_degree: int = 1
+    context_parallel_rotate_method: str = 'allgather'
+    mixed_precision_param: str = 'bfloat16'
+    mixed_precision_reduce: str = 'float32'
+    compile: bool = False
+    gc_freq: int = 50
+    seed: Optional[int] = None
+    deterministic: bool = False
+
+
+@dataclass
+class CheckpointConfig:
+    enable_checkpoint: bool = False
+    folder: str = 'checkpoint'
+    interval_type: str = 'steps'
+    interval: int = 500
+    model_weights_only: bool = False
+    export_dtype: str = 'float32'
+    create_seed_checkpoint: bool = False
+    async_mode: str = 'disabled'
+    keep_latest_k: int = 0
+    load_step: int = -1
+
+
+@dataclass
+class Float8Config:
+    enable_float8_linear: bool = False
+    enable_fsdp_float8_all_gather: bool = False
+    precompute_float8_dynamic_scale_for_fsdp: bool = False
+    scaling_type_input: str = 'dynamic'
+    scaling_type_weight: str = 'dynamic'
+    scaling_type_grad_output: str = 'dynamic'
+
+
+@dataclass
+class CommConfig:
+    init_timeout_seconds: int = 300
+    train_timeout_seconds: int = 100
+    trace_buf_size: int = 20000
+
+
+@dataclass
+class MemoryEstimationConfig:
+    enabled: bool = False
+    disable_fake_mode: bool = False
+
+
+@dataclass
 class JobConfig:
     """
     A helper class to manage the train configuration.
