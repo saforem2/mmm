@@ -60,8 +60,6 @@ def main(job_config: JobConfig):
     # take control of garbage collection to avoid stragglers
     gc_handler = utils.GarbageCollection(gc_freq=job_config.training.gc_freq)
 
-    from ezpz.utils import breakpoint
-
     tpsize = job_config.training.tensor_parallel_degree
     _ = ezpz.setup_torch('DDP', tensor_parallel_size=tpsize)
     world_size = ezpz.get_world_size()
@@ -73,11 +71,17 @@ def main(job_config: JobConfig):
             logger.exception('Failed to import wandb')
             raise e
         fp = Path(__file__)
-        run = ezpz.setup_wandb(project_name=f'mmm.{fp.parent.stem}.{fp.stem}')
+        wbname = (
+            f'mmm.{fp.parent.stem}.{fp.stem}'
+            if 'mmm' not in fp.parent.stem
+            else f'mmm.{fp.stem}'
+        )
+        run = ezpz.setup_wandb(project_name=wbname)
         assert run is not None and run is wandb.run
         from dataclasses import asdict
 
-        wandb.run.config.update(asdict(job_config))  # type:ignore
+        wandb.run.config.update(job_config.to_dict())  # type:ignore
+        # wandb.run.config.update(asdict(job_config))  # type:ignore
 
     dpsize = world_size // tpsize
     # device_mesh = init_device_mesh(
@@ -422,10 +426,18 @@ def main(job_config: JobConfig):
                     or parallel_dims.dp_shard_enabled
                     or parallel_dims.cp_enabled
                 ):
-                    global_avg_loss, global_max_loss = (
-                        utils.dist_mean(avg_loss, world_mesh['dp_cp']),
-                        utils.dist_max(max_loss, world_mesh['dp_cp']),
+                    global_sum_loss = utils.dist_sum(
+                        avg_loss, world_mesh['dp_cp']
                     )
+                    global_avg_loss = global_sum_loss / dp_degree
+                    global_max_loss = utils.dist_max(
+                        max_loss, world_mesh['dp_cp']
+                    )
+                    # global_avg_loss, global_max_loss = (
+                    #     # utils.dist_mean(avg_loss, world_mesh['dp_cp']),
+                    #     utils.dist_sum(avg_loss, world_mesh['dp_cp']),
+                    #     utils.dist_max(max_loss, world_mesh['dp_cp']),
+                    # )
                 else:
                     global_avg_loss, global_max_loss = avg_loss, max_loss
 
