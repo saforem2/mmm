@@ -1,7 +1,5 @@
 # Torch on Aurora
 
-
-
 ## Current Issue
 
 With the most recent `pytorch==2.5` on Aurora, the following error is thrown
@@ -148,7 +146,7 @@ Explicitly, in my case, these were located at:
 /lus/flare/projects/Aurora_deployment/foremans/micromamba/envs/anl_2024_12_release_2/lib/python3.10/site-packages/torch/distributed/_composable/fsdp/
 ```
 
-#### Diff of `_fsdp_state.py`
+### Diff of `_fsdp_state.py`
 
 
 ```diff
@@ -182,7 +180,7 @@ Explicitly, in my case, these were located at:
 ```
 
 
-#### Diff of `_fsdp_collectives.py`
+### Diff of `_fsdp_collectives.py`
 
 ```diff
 diff _fsdp_collectives_orig.py _fsdp_collectives_new.py
@@ -391,17 +389,19 @@ $ PYTORCH_ENABLE_XPU_FALLBACK=1 WORLD_SIZE=12 yeet python3 -m mmm.train --job.co
     [2025-02-04 16:45:57][I][mmm/train:493:__main__] step=10 global_avg_loss=6.886052 global_max_loss=8.090250 throughput(tps)=268.175160 mfu(%)=4.711792 end_to_end(s)=27.492479 data_loading(s)=0.007497 data_loading(%)=0.024541
     ```
 
-</details>
+   </details>
 
 
 # Running on Polaris
+
+### LLama3 on Polaris
 
 I've confirmed independently that this code also runs as expected on Polaris.
 
 See [🦙 Llama 3](https://github.com/saforem2/mmm/blob/main/README.md#-llama3)
 for more details.
 
-1. Launch training:
+- Launch training:
 
     ```bash
     launch python3 -m mmm.train --job.config_file train_configs/llama3_8b.toml --training.seq_len=2048
@@ -435,7 +435,6 @@ for more details.
     [rank2]:[W203 09:19:42.067891022 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
     [rank3]:[W203 09:19:42.068768126 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 3]  using GPU 3 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in barrier() to force use of a particular device, or call init_process_group() with a device_id.
     [rank1]:[W203 09:19:42.069066595 ProcessGroupNCCL.cpp:4561] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 to perform barrier as devices used by this process are currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. Specify device_ids in ba
-    rrier() to force use of a particular device, or call init_process_group() with a device_id.
     [2025-02-03 09:19:43][I][ezpz/dist:823] Using device='cuda' with backend='DDP' + 'nccl' for distributed training.
     [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s37b1n0'][2/7]
     [2025-02-03 09:19:43][I][ezpz/dist:869] ['x3005c0s37b1n0'][1/7]
@@ -481,4 +480,93 @@ for more details.
 
     </details>
 
-    </details>
+  </details>
+
+
+## Complete Install Instructions on Aurora
+
+```bash
+# install micromamba
+"${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+
+# create a new environment
+mm create --prefix "/flare/Aurora_deployment/foremans/micromamba/${ENV_NAME}" python=3.12 -y
+mm activate /lus/flare/projects/Aurora_deployment/foremans/micromamba/anl_2024_12_release_2.1
+mm install -y git cmake ninja
+
+# install mpi4py
+gh repo clone mpi4py/mpi4py /tmp/mpi4py
+cd /tmp/mpi4py/
+python3 setup.py develop |& tee build.log
+python3 setup.py Install
+
+# install requirements
+python3 -m pip install fixedint pudb flake8 regex pybind11 einops six transformers numpy setuptools
+
+# install torch
+USE_XPU=1 python3 -m pip install torch==2.5.1+xpu intel-extension-for-pytorch==2.5.1+xpu oneccl_bind_pt==2.5.1+xpu --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+
+# uninstall intel-mpi runtime
+python3 -m pip uninstall impi_rt
+
+# load modules
+module unload oneapi/eng-compiler/2024.07.30.002
+module use /opt/aurora/24.180.3/spack/unified/0.8.0/install/modulefiles/oneapi/2024.07.30.002
+module use /soft/preview/pe/24.347.0-RC2/modulefiles
+module add oneapi/release
+
+# export environment variables
+export ZE_ENABLE_PCI_ID_DEVICE_ORDER=1
+export CCL_PROCESS_LAUNCHER=pmix
+export PALS_PMI=pmix
+export CCL_ATL_TRANSPORT=mpi
+export CCL_OP_SYNC=1
+export FI_PROVIDER="cxi,tcp;ofi_rxm"
+export I_MPI_OFI_LIBRARY="/opt/cray/libfabric/1.20.1/lib64/libfabric.so.1"
+export ZE_FLAT_DEVICE_HIERARCHY=FLAT
+
+# install deepspeed
+python3 -m pip install deepspeed
+```
+
+### 🍋 Install `ezpz`
+
+```bash
+# ezpz_setup_env
+source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
+ezpz_setup_env
+
+# install ezpz
+python3 -m pip install -e "git+https://github.com/saforem2/ezpz#egg=ezpz"
+
+# run simple DDP test
+launch python3 -m ezpz.test_dist
+```
+
+
+### Issue with Multi-Node MPICH (?)
+
+There seems to be a subtle issue somehow related to multi-node MPICH.
+
+I thought previously the issue might've been due to my conda environment living
+in my home directory and thought I forgot to specify the `home` filesystem in
+my job submission (thereby preventing the other nodes from seeing it), but
+after trying again this morning with my environment explicitly placed on
+`/flare/`, I no longer believe this is the case.
+
+Will have to look into this further.
+
+- [x] Works:
+
+    ```bash
+    mpiexec -n 12 -ppn 12 python3 -m ezpz.test_dist
+    ```
+
+
+- [ ] Hangs:
+
+    ```bash
+    launch python3 -m ezpz.test_dist
+    ```
+
+  🤔 hmmmm.......
