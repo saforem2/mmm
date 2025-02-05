@@ -148,6 +148,7 @@ Explicitly, in my case, these were located at:
 
 ### Diff of `_fsdp_state.py`
 
+<details closed><summary>Diff</summary>
 
 ```diff
 diff --git a/torch/distributed/_composable/fsdp/_fsdp_state.py b/torch/distributed/_composable/fsdp/_fsdp_state.py
@@ -201,11 +202,13 @@ index ceb480fd239..c4fa73534ee 100644
 +                        )
                      self._comm_ctx.reduce_scatter_state = None
              self._state_ctx.post_backward_final_callback_queued = False
-
 ```
+
+</details>
 
 ### Diff of `_fsdp_collectives.py`
 
+<details closed><summary>Diff</summary>
 
 ```diff
 diff --git a/torch/distributed/_composable/fsdp/_fsdp_collectives.py b/torch/distributed/_composable/fsdp/_fsdp_collectives.py
@@ -318,10 +321,9 @@ index 4e10f4594c1..45d66775d13 100644
 +    if torch.cuda.is_available():
 +        cm = torch.cuda.stream(reduce_scatter_stream)
 +    elif torch.xpu.is_available():
-+        # NOTE: The `predivide_factor` below is necessary since the `ReduceOp.AVG` is not supported on XPU.
-+        # Explicitly, it crashes with:
-+        #     RuntimeError: Cannot use ReduceOp.AVG with XPU
-+        # TODO: Fix this / replace the predivide_factor by the size of the reduce_scatter_group
++        # NOTE: Predivide factor required for XPU since 
++        # otherwise crashes with
++        # [rank0]: RuntimeError: Cannot use ReduceOp.AVG with XPU
 +        predivide_factor = reduce_scatter_group.size()
 +        cm = torch.xpu.stream(reduce_scatter_stream)
 +    else:
@@ -349,7 +351,6 @@ index 4e10f4594c1..45d66775d13 100644
                      op=ReduceOp.AVG if predivide_factor is None else ReduceOp.SUM,
                  )
 -    with torch.cuda.stream(post_reduce_stream):
-+    # with get_stream(post_reduce_stream):
 +    if torch.cuda.is_available():
 +        cm2 = torch.cuda.stream(post_reduce_stream)
 +    elif torch.xpu.is_available():
@@ -362,9 +363,12 @@ index 4e10f4594c1..45d66775d13 100644
          # View out and accumulate sharded gradients
 ```
 
+</details>
+
 
 ### Diff of `_fsdp_param_group`
 
+<details closed><summary>Diff</summary>
 
 ```diff
 diff --git a/torch/distributed/_composable/fsdp/_fsdp_param_group.py b/torch/distributed/_composable/fsdp/_fsdp_param_group.py
@@ -570,8 +574,9 @@ index 3cb4a31c28d..351affaad98 100644
              if fsdp_param.grad_offload_event is not None:
 ```
 
-## ✅ Verify Fix
+</details>
 
+## ✅ Verify Fix
 
 ### 🦙 Llama-3.1-8B on Aurora
 
