@@ -22,14 +22,16 @@ In particular, we can use the `ezpz_setup_env` helper function[^ezpz_setup_env]
 to automatically take care of all of our required environment setup:
 
 ```bash
+# if @ ALCF, set:
+# PBS_O_WORKDIR=$(pwd)
 source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
 ezpz_setup_env
 ```
 
 - 🪄 This will, _automagically_:
 
-    - 🏡 Setup + activate python environment
-    - 🐍 Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
+    - 🐍 Setup + activate python environment
+    - 🤔 Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
     - 🚀 Define a `launch` alias to launch our application across them
  
     and should work anywhere you have a working MPI installation.
