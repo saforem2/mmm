@@ -58,6 +58,21 @@ class SoftCapAttention:
 @dataclass
 class ViTConfig:
     img_size: int = 224
+    patch_size: int = 16
+    num_layers: int = 12
+    num_heads: int = 12
+    hidden_dim: int = 768
+    mlp_dim: int = 3072
+    dropout: float = 0.0
+    attention_dropout: float = 0.0
+    num_classes: int = 10
+
+    def __post_init__(self):
+        self.seq_len = (self.img_size // self.patch_size) ** 2  # 196, default
+
+@dataclass
+class timmViTConfig:
+    img_size: int = 224
     batch_size: int = 128
     num_heads: int = 16
     head_dim: int = 64

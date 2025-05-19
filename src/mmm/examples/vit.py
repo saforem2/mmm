@@ -7,16 +7,15 @@ import functools
 import os
 from pathlib import Path
 import time
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import ezpz
-from timm.models.vision_transformer import VisionTransformer
 import torch
 import torch._dynamo
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
 
-from mmm.configs import TORCH_DTYPES_MAP, TrainArgs, ViTConfig
+from mmm.configs import TORCH_DTYPES_MAP, TrainArgs, timmViTConfig
 from mmm.models import summarize_model
 
 from mmm.data.vision import get_fake_data  # , get_mnist
@@ -25,7 +24,7 @@ from mmm.models.vit.attention import AttentionBlock
 logger = ezpz.get_logger(__name__)
 
 
-def parse_args() -> TrainArgs:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog='mmm.train.vit',
         description='Train a simple ViT',
@@ -71,7 +70,7 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
     local_rank = ezpz.get_local_rank()
     device_type = str(ezpz.get_torch_device(as_torch_device=False))
     device = torch.device(f'{device_type}:{local_rank}')
-    config = ViTConfig(
+    config = timmViTConfig(
         img_size=args.img_size,
         batch_size=args.batch_size,
         num_heads=args.num_heads,
@@ -96,6 +95,21 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
     #     pin_memory=True,
     #     drop_last=True,
     # )
+
+    # from torchvision.models.vision_transformer import VisionTransformer
+    # model = VisionTransformer(
+    #     image_size=config.img_size,
+    #     patch_size=config.patch_size,
+    #     num_layers=config.num_layers,
+    #     num_heads=config.num_heads,
+    #     hidden_dim=config.hidden_dim,
+    #     mlp_dim=config.mlp_dim,
+    #     dropout=config.dropout,
+    #     attention_dropout=config.attention_dropout,
+    #     num_classes=
+    # )
+    #
+    from timm.models.vision_transformer import VisionTransformer  # type:ignore
 
     model = VisionTransformer(
         img_size=config.img_size,
@@ -200,10 +214,13 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
 
 
 def main():
+    _ = ezpz.setup_torch()
     # torch._dynamo.config.suppress_errors = True  # type:ignore
-    rank = ezpz.setup_torch(
-        backend=os.environ.get('BACKEND', 'DDP'),
-    )
+    # try:
+    # _ = ezpz.setup_torch(
+    #     backend=os.environ.get('BACKEND', 'DDP'),
+    # )
+    # except:
     # return TrainArgs(**vars(parser.parse_args()))
     args = parse_args()
     if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
@@ -218,7 +235,7 @@ def main():
         wandb.run.config.update({**vars(args)})  # type:ignore
 
     train_args: TrainArgs = TrainArgs(**vars(args))
-    config = ViTConfig(
+    config = timmViTConfig(
         img_size=args.img_size,
         batch_size=args.batch_size,
         num_heads=args.num_heads,
@@ -264,7 +281,7 @@ def main():
     else:
         raise ValueError(f'Unknown attention type: {args.attn_type}')
     logger.info(f'Using AttentionBlock Attention with {args.compile=}')
-    train_fn(block_fn, args)
+    train_fn(block_fn, train_args)
 
 
 if __name__ == '__main__':
