@@ -1,4 +1,4 @@
-# 🐫 `mmm`: Multi-Model Modeling
+# 🐫 `mmm`: Multi-Modal Modeling
 
 ## 🐣 Getting Started
 
