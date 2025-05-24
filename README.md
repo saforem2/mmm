@@ -1,85 +1,61 @@
 # 🐫 `mmm`: Multi-Modal Modeling
 
-## 🐣 Getting Started
 
-### 🏡 Setup Environment
+<!--
+## 🏖️ Shell Environment
 
-> [!IMPORTANT]
-> See 🍋[saforem2 / `ezpz`](https://github.com/saforem2/ezpz) for additional information.
+We can use [🍋 `ezpz`](https://github.com/saforem2/ezpz) to do some automated environment setup.
 
-We use [`ezpz`](https://github.com/saforem2/ezpz)
-for **setting up**, **launching**, and **orchestrating** our distributed training.
+This is particularly useful @ ALCF (or, generally, on any {PBS, slurm} cluster) since it will determine the spe
 
-To setup our environment, we first `source` the
-[`ezpz/bin/utils.sh`](https://github.com/saforem2/ezpz/blob/main/src/ezpz/bin/utils.sh)
-script.
-
-This populates the shell environment with a variety of useful functions for
-setting up a python environment and determining the specifics of 
-our currently running job (e.g. number of nodes, number of GPUs per node, etc.).
-
-In particular, we can use the `ezpz_setup_env` helper function[^ezpz_setup_env]
-to automatically take care of all of our required environment setup:
+See 
 
 ```bash
-# if @ ALCF, set:
-# PBS_O_WORKDIR=$(pwd)
-source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
-ezpz_setup_env
+source <(curl -L https://bit.ly/ezpz-utils) && ezpz_setup_env
+```
+-->
+## [🍋 `ezpz`](https://github.com/saforem2/ezpz)
+
+```bash
+source <(curl -L https://bit.ly/ezpz-utils) && ezpz_setup_env
 ```
 
-- 🪄 This will, _automagically_:
 
-    - 🐍 Setup + activate python environment
-    - 🤔 Determine available resources (i.e. `NHOSTS`, `NGPU_PER_HOST`, `NGPUS`)
-    - 🚀 Define a `launch` alias to launch our application across them
- 
-    and should work anywhere you have a working MPI installation.
+## ⬇️ Install `mmm`
 
-> [!NOTE]
-> This is _technically_ optional, but highly recommended as it will allow
-> you to automatically launch on any[^any] distributed setup with a compatible MPI.
-
-[^ezpz_setup_env]:
-    Technically, it just chains together two separate (and useful on their own) function calls, explicitly:
-
-    ```bash
-    $ which ezpz_setup_env
-    ezpz_setup_env() {
-       ezpz_setup_python && ezpz_setup_job
-    }
-    ```
-
-
-[^any]: This has been tested and confirmed to work on:
-
-    - Any job behind a {PBS, slurm} job scheduler
-    - All [ALCF](https://alcf.anl.gov) systems (Aurora, Polaris, Sunspot, Sophia, etc.)
-    - Frontier (AMD system) @ OLCF
-    - Perlmutter (NVIDIA system) @ NERSC
-    - Distributed CPUs via `mpirun`
-    - Distributed `mps` devices via `mpirun`
-
-    Both PBS and Slurm job schedulers are supported and the specifics of the running job will be used to populate the corresponding `launch` command.
-
-### ⬇️ Install
-
+<!--
 Armed with a functional python installation[^requires], we can install `mmm`.
 
-[^requires]: 
-    Requires:
-    
-    - 🔥 [pytorch/`pytorch`](https://pytorch.org)
-    - 🍋 [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
-    - 📡 [mpi4py/`mpi4py`](https://github.com/mpi4py/mpi4py)
-
-
 - From GitHub:
+-->
 
-  ```bash
-  python3 -m pip install -e "git+https://github.com/saforem2/mmm#egg=mmm"
-  ```
+<!--
+<details closed><summary>🍋 <code>ezpz</code>:</summary>
 
+    
+[🍋 `ezpz`](https://github.com/saforem2/ezpz):
+
+```bash
+source <(curl -L https://bit.ly/ezpz-utils) && ezpz_setup_env
+```
+
+</details>
+-->
+
+```bash
+python3 -m pip install "git+https://github.com/saforem2/mmm"
+```
+
+<details closed><summary>using <a href="https://docs.astral.sh/uv/"><code>uv</code></a>:</summary>
+    
+```bash
+uv pip install "mmm @ git+https://github.com/saforem2/mmm"
+```
+
+</details>
+
+
+<!--
 - <details closed><summary>From local clone (development)</summary>
 
   ```bash
@@ -88,7 +64,9 @@ Armed with a functional python installation[^requires], we can install `mmm`.
   ```
 
   </details>
+-->
 
+<!--
 - <details closed><summary>Using <code>uv</code></summary>
 
   ```bash
@@ -96,6 +74,8 @@ Armed with a functional python installation[^requires], we can install `mmm`.
   ```
 
   </details>
+-->
+
 
 ## 📊 Examples
 
