@@ -40,8 +40,14 @@ from mmm.parallelisms import (
 from mmm.profiling import maybe_enable_memory_snapshot, maybe_enable_profiling
 from mmm.utils import device_module, device_type
 
-
 logger = ezpz.get_logger(__name__)
+
+try:
+    import wandb
+except Exception as e:
+    logger.exception('Failed to import wandb')
+    raise e
+
 
 
 # Enable debug tracing on failure: https://pytorch.org/docs/stable/elastic/errors.html
@@ -65,11 +71,6 @@ def main(job_config: JobConfig):
     world_size = ezpz.get_world_size()
     assert world_size % tpsize == 0, 'WORLD_SIZE must be divisible by TP'
     if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
-        try:
-            import wandb
-        except Exception as e:
-            logger.exception('Failed to import wandb')
-            raise e
         fp = Path(__file__)
         wbname = (
             f'mmm.{fp.parent.stem}.{fp.stem}'
@@ -137,10 +138,16 @@ def main(job_config: JobConfig):
     model_name = job_config.model.name
 
     # build tokenizer
-    tokenizer_type = model_name_to_tokenizer[model_name]
-    tokenizer = build_tokenizer(
-        tokenizer_type, job_config.model.tokenizer_path
-    )
+    try:
+        tokenizer_type = model_name_to_tokenizer[model_name]
+        tokenizer = build_tokenizer(
+            tokenizer_type, job_config.model.tokenizer_path
+        )
+    except Exception:
+        if world_size > 1:
+            ezpz.breakpoint(0)
+        else:
+            import pudb; pudb.set_trace()
     # build data loader
     data_loader = build_hf_data_loader(
         job_config.training.dataset,
@@ -182,9 +189,16 @@ def main(job_config: JobConfig):
         job_config.training.seq_len,
     )
     logger.info(
-        f'Model {model_name} {job_config.model.flavor} '
-        f'size: {model_param_count:,} total parameters'
+        '\n'.join([
+            f'Model {model_name} {job_config.model.flavor}',
+            f'size: {model_param_count:,} total parameters'
+        ])
     )
+    if wandb is not None and wandb.run is not None:
+        wandb.run.config.update({
+            'model_param_count': model_param_count,
+            'num_flop_per_token': num_flop_per_token,
+        })
 
     # loss fn to be shared by Pipeline Parallel and SPMD training
     def loss_fn(pred, labels):
@@ -566,6 +580,7 @@ def main(job_config: JobConfig):
 
 
 if __name__ == '__main__':
+    # torch._dynamo.config.suppress_errors = True  # type:ignore
     config = JobConfig()
     config.parse_args()
     main(config)
