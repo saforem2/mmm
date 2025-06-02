@@ -78,6 +78,12 @@ class timmViTConfig:
     head_dim: int = 64
     depth: int = 24
     patch_size: int = 16
+    num_layers: int = 24
+    hidden_dim: int = 1024
+    mlp_dim: int = 4096
+    dropout: float = 0.0
+    attention_dropout: float = 0.0
+    num_classes: int = 1000
 
     def __post_init__(self):
         self.seq_len = (self.img_size // self.patch_size) ** 2  # 196, default
