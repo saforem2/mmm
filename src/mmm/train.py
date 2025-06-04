@@ -42,40 +42,42 @@ from mmm.utils import device_module, device_type
 
 logger = ezpz.get_logger(__name__)
 
-try:
-    import wandb
-except Exception as e:
-    logger.exception('Failed to import wandb')
-    raise e
-
-
+if os.environ.get('WANDB_DISABLED', False):
+    wandb = None
+else:
+    try:
+        import wandb
+    except Exception as e:
+        logger.exception('Failed to import wandb')
+        wandb = None
 
 # Enable debug tracing on failure: https://pytorch.org/docs/stable/elastic/errors.html
 @record
 def main(job_config: JobConfig):
-    logger.info(f'Starting job: {job_config.job.description}')
+    logger.info(f"Starting job: {job_config.job.description}")
+    # assert (
+    #     hasattr(job_config, "job")
+    #     and hasattr(job_config, "metrics")
+    #     and hasattr(job_config, "training")
+    # ), "JobConfig must have job, metrics, and training attributes"
     if job_config.job.print_args:
-        logger.info(f'Running with args: {job_config.to_dict()}')
+        logger.info(f"Running with args: {job_config.to_dict()}")
     # used for colorful printing
-    color = (
-        utils.NoColor
-        if job_config.metrics.disable_color_printing
-        else utils.Color
-    )
+    color = utils.NoColor if job_config.metrics.disable_color_printing else utils.Color
 
     # take control of garbage collection to avoid stragglers
     gc_handler = utils.GarbageCollection(gc_freq=job_config.training.gc_freq)
 
     tpsize = job_config.training.tensor_parallel_degree
-    _ = ezpz.setup_torch('DDP', tensor_parallel_size=tpsize)
+    _ = ezpz.setup_torch("DDP", tensor_parallel_size=tpsize)
     world_size = ezpz.get_world_size()
-    assert world_size % tpsize == 0, 'WORLD_SIZE must be divisible by TP'
-    if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
+    assert world_size % tpsize == 0, "WORLD_SIZE must be divisible by TP"
+    if ezpz.get_rank() == 0 and not os.environ.get("WANDB_DISABLED", False):
         fp = Path(__file__)
         wbname = (
-            f'mmm.{fp.parent.stem}.{fp.stem}'
-            if 'mmm' not in fp.parent.stem
-            else f'mmm.{fp.stem}'
+            f"mmm.{fp.parent.stem}.{fp.stem}"
+            if "mmm" not in fp.parent.stem
+            else f"mmm.{fp.stem}"
         )
         run = ezpz.setup_wandb(project_name=wbname)
         assert run is not None and run is wandb.run
@@ -101,22 +103,20 @@ def main(job_config: JobConfig):
         enable_loss_parallel=(not job_config.training.disable_loss_parallel),
     )
     local_rank = ezpz.get_local_rank()
-    device = torch.device(f'{device_type}:{local_rank}')
+    device = torch.device(f"{device_type}:{local_rank}")
     device_module.set_device(device)
     utils.init_distributed(job_config)
     # initialize device memory monitor and get peak flops for MFU calculation
     # device_memory_monitor = build_device_memory_monitor()
     # gpu_peak_flops = utils.get_peak_flops(device_memory_monitor.device_name)
     gpu_peak_flops = utils.get_peak_flops(ezpz.get_torch_device_type())
-    logger.info(f'Peak FLOPS used for computing MFU: {gpu_peak_flops:.3e}')
+    logger.info(f"Peak FLOPS used for computing MFU: {gpu_peak_flops:.3e}")
 
     # build meshes
-    world_mesh = parallel_dims.build_mesh(
-        device_type=ezpz.get_torch_device_type()
-    )
+    world_mesh = parallel_dims.build_mesh(device_type=ezpz.get_torch_device_type())
     if parallel_dims.dp_enabled:
         # try:
-        dp_mesh = world_mesh['dp_shard']
+        dp_mesh = world_mesh["dp_shard"]
         # except Exception:
         #     from ezpz.utils import breakpoint
         #     breakpoint(0)
@@ -125,7 +125,7 @@ def main(job_config: JobConfig):
         dp_degree, dp_rank = 1, 0
 
     if parallel_dims.pp_enabled:
-        pp_mesh = world_mesh['pp']
+        pp_mesh = world_mesh["pp"]
 
     # Set random seed, and maybe enable deterministic mode (mainly for
     # debugging, expect perf loss)
@@ -140,14 +140,16 @@ def main(job_config: JobConfig):
     # build tokenizer
     try:
         tokenizer_type = model_name_to_tokenizer[model_name]
-        tokenizer = build_tokenizer(
-            tokenizer_type, job_config.model.tokenizer_path
-        )
-    except Exception:
-        if world_size > 1:
-            ezpz.breakpoint(0)
-        else:
-            import pudb; pudb.set_trace()
+        tokenizer = build_tokenizer(tokenizer_type, job_config.model.tokenizer_path)
+    except Exception as e:
+        # if world_size > 1:
+        #     ezpz.breakpoint(0)
+        # else:
+        #     import pudb
+        #
+        #     pudb.set_trace()
+        logger.error(f"Failed to build tokenizer for {model_name}: {e}")
+        raise e
     # build data loader
     data_loader = build_hf_data_loader(
         job_config.training.dataset,
@@ -170,10 +172,8 @@ def main(job_config: JobConfig):
     model_config.vocab_size = tokenizer.n_words
     model_config.max_seq_len = job_config.training.seq_len
 
-    logger.info(
-        f'Building {model_name} {job_config.model.flavor} with {model_config}'
-    )
-    with torch.device('meta'):
+    logger.info(f"Building {model_name} {job_config.model.flavor} with {model_config}")
+    with torch.device("meta"):
         model = model_cls.from_model_args(model_config)
 
     # a no-op handler if float8 is not enabled
@@ -189,16 +189,20 @@ def main(job_config: JobConfig):
         job_config.training.seq_len,
     )
     logger.info(
-        '\n'.join([
-            f'Model {model_name} {job_config.model.flavor}',
-            f'size: {model_param_count:,} total parameters'
-        ])
+        "\n".join(
+            [
+                f"Model {model_name} {job_config.model.flavor}",
+                f"size: {model_param_count:,} total parameters",
+            ]
+        )
     )
     if wandb is not None and wandb.run is not None:
-        wandb.run.config.update({
-            'model_param_count': model_param_count,
-            'num_flop_per_token': num_flop_per_token,
-        })
+        wandb.run.config.update(
+            {
+                "model_param_count": model_param_count,
+                "num_flop_per_token": num_flop_per_token,
+            }
+        )
 
     # loss fn to be shared by Pipeline Parallel and SPMD training
     def loss_fn(pred, labels):
@@ -212,10 +216,10 @@ def main(job_config: JobConfig):
     #
     # move sharded model to CPU/GPU and initialize weights via DTensor
     if job_config.checkpoint.create_seed_checkpoint:
-        init_device = 'cpu'
+        init_device = "cpu"
         buffer_device = None
     elif job_config.training.enable_cpu_offload:
-        init_device = 'cpu'
+        init_device = "cpu"
         buffer_device = device_type
     else:
         init_device = device_type
@@ -238,9 +242,7 @@ def main(job_config: JobConfig):
         # We need to iterate through model_parts to apply SPMD parallelisms, compilation, optimizer, and checkpointing
         for m in model_parts:
             # apply SPMD-style PT-D techniques
-            models_parallelize_fns[model_name](
-                m, world_mesh, parallel_dims, job_config
-            )
+            models_parallelize_fns[model_name](m, world_mesh, parallel_dims, job_config)
             m.to_empty(device=init_device)
             with torch.no_grad():
                 m.init_weights(buffer_device=buffer_device)
@@ -248,9 +250,7 @@ def main(job_config: JobConfig):
 
     else:
         # Apply PT-D Tensor Parallel, activation checkpointing, torch.compile, Data Parallel
-        models_parallelize_fns[model_name](
-            model, world_mesh, parallel_dims, job_config
-        )
+        models_parallelize_fns[model_name](model, world_mesh, parallel_dims, job_config)
         model.to_empty(device=init_device)
         with torch.no_grad():
             model.init_weights(buffer_device=buffer_device)
@@ -260,12 +260,12 @@ def main(job_config: JobConfig):
     try:
         device_mem_stats = device_memory_monitor.get_peak_stats()
         logger.info(
-            f'{device_type.upper()} memory usage for model: '
-            f'{device_mem_stats.max_reserved_gib:.2f}GiB'
-            f'({device_mem_stats.max_reserved_pct:.2f}%)'
+            f"{device_type.upper()} memory usage for model: "
+            f"{device_mem_stats.max_reserved_gib:.2f}GiB"
+            f"({device_mem_stats.max_reserved_pct:.2f}%)"
         )
     except Exception as e:
-        logger.error(f'Error getting memory stats: {e}')
+        logger.error(f"Error getting memory stats: {e}")
 
     # build optimizer after applying parallelisms to the model
     optimizers = build_optimizers(model_parts, job_config)
@@ -279,17 +279,17 @@ def main(job_config: JobConfig):
         model_parts=model_parts,
         optimizers=optimizers,
         lr_schedulers=lr_schedulers,
-        states={'train_state': train_state},
+        states={"train_state": train_state},
         job_config=job_config,
     )
 
     if job_config.checkpoint.create_seed_checkpoint:
-        assert world_size == 1, (
-            'Must create seed-checkpoint using one gpu, to disable sharding'
-        )
+        assert (
+            world_size == 1
+        ), "Must create seed-checkpoint using one gpu, to disable sharding"
 
         checkpoint.save(curr_step=0, force=True)
-        logger.info('Seed checkpoint created, exiting')
+        logger.info("Seed checkpoint created, exiting")
         return
 
     checkpoint.load(step=job_config.checkpoint.load_step)
@@ -301,12 +301,8 @@ def main(job_config: JobConfig):
     if train_state.step > 0:
         for idx, step in enumerate(train_state.log_steps):
             metrics = {
-                'loss_metrics/global_avg_loss': train_state.global_avg_losses[
-                    idx
-                ],
-                'loss_metrics/global_max_loss': train_state.global_max_losses[
-                    idx
-                ],
+                "loss_metrics/global_avg_loss": train_state.global_avg_losses[idx],
+                "loss_metrics/global_max_loss": train_state.global_max_losses[idx],
             }
             metric_logger.log(metrics, step=step)
 
@@ -324,17 +320,17 @@ def main(job_config: JobConfig):
     try:
         device_memory_monitor.reset_peak_stats()
     except Exception as e:
-        logger.error(f'Error resetting memory stats: {e}')
+        logger.error(f"Error resetting memory stats: {e}")
     checkpoint.reset()
 
     # train loop
     logger.info(
-        f'Training starts at step {train_state.step + 1}, '
-        f'with local batch size {job_config.training.batch_size}, '
-        f'global batch size {job_config.training.batch_size * dp_degree}, '
-        f'sequence length {job_config.training.seq_len}, '
-        f'total steps {job_config.training.steps} '
-        f'(warmup {job_config.training.warmup_steps})'
+        f"Training starts at step {train_state.step + 1}, "
+        f"with local batch size {job_config.training.batch_size}, "
+        f"global batch size {job_config.training.batch_size * dp_degree}, "
+        f"sequence length {job_config.training.seq_len}, "
+        f"total steps {job_config.training.steps} "
+        f"(warmup {job_config.training.warmup_steps})"
     )
     from ezpz import History
 
@@ -365,7 +361,7 @@ def main(job_config: JobConfig):
             # apply context parallelism if cp is enabled
             optional_context_parallel_ctx = (
                 utils.create_context_parallel_ctx(
-                    cp_mesh=world_mesh['cp'],
+                    cp_mesh=world_mesh["cp"],
                     cp_buffers=[input_ids, labels, model.freqs_cis],
                     cp_seq_dims=[1, 1, 0],
                     cp_no_restore_buffers={input_ids, labels},
@@ -422,9 +418,7 @@ def main(job_config: JobConfig):
 
             # calculate float8 dynamic amax/scale for all-parameter for FSDP2
             # it issues a single all-reduce for all parameters at once for better performance
-            float8_handler.precompute_float8_dynamic_scale_for_fsdp(
-                model_parts
-            )
+            float8_handler.precompute_float8_dynamic_scale_for_fsdp(model_parts)
 
             losses_since_last_log.append(loss)
 
@@ -440,13 +434,9 @@ def main(job_config: JobConfig):
                     or parallel_dims.dp_shard_enabled
                     or parallel_dims.cp_enabled
                 ):
-                    global_sum_loss = utils.dist_sum(
-                        avg_loss, world_mesh['dp_cp']
-                    )
+                    global_sum_loss = utils.dist_sum(avg_loss, world_mesh["dp_cp"])
                     global_avg_loss = global_sum_loss / dp_degree
-                    global_max_loss = utils.dist_max(
-                        max_loss, world_mesh['dp_cp']
-                    )
+                    global_max_loss = utils.dist_max(max_loss, world_mesh["dp_cp"])
                     # global_avg_loss, global_max_loss = (
                     #     # utils.dist_mean(avg_loss, world_mesh['dp_cp']),
                     #     utils.dist_sum(avg_loss, world_mesh['dp_cp']),
@@ -472,51 +462,47 @@ def main(job_config: JobConfig):
                 mfu = 100 * num_flop_per_token * tps / gpu_peak_flops
 
                 time_end_to_end = time_delta / job_config.metrics.log_freq
-                time_data_loading = sum(data_loading_times) / len(
-                    data_loading_times
-                )
-                time_data_loading_pct = (
-                    100 * sum(data_loading_times) / time_delta
-                )
+                time_data_loading = sum(data_loading_times) / len(data_loading_times)
+                time_data_loading_pct = 100 * sum(data_loading_times) / time_delta
 
                 try:
                     device_mem_stats = device_memory_monitor.get_peak_stats()
                 except Exception as e:
                     device_mem_stats = None
                     if train_state.step == 1:
-                        logger.error(f'Error getting memory stats: {e}')
+                        logger.error(f"Error getting memory stats: {e}")
 
                 metrics = {
-                    'loss_metrics/global_avg_loss': global_avg_loss,
-                    'loss_metrics/global_max_loss': global_max_loss,
-                    'throughput(tps)': tps,
-                    'mfu(%)': mfu,
-                    'time_metrics/end_to_end(s)': time_end_to_end,
-                    'time_metrics/data_loading(s)': time_data_loading,
-                    'time_metrics/data_loading(%)': time_data_loading_pct,
+                    "loss_metrics/global_avg_loss": global_avg_loss,
+                    "loss_metrics/global_max_loss": global_max_loss,
+                    "throughput(tps)": tps,
+                    "mfu(%)": mfu,
+                    "time_metrics/end_to_end(s)": time_end_to_end,
+                    "time_metrics/data_loading(s)": time_data_loading,
+                    "time_metrics/data_loading(%)": time_data_loading_pct,
                 }
                 if device_mem_stats:
                     metrics |= {
-                        'memory/max_active(GiB)': device_mem_stats.max_active_gib,
-                        'memory/max_active(%)': device_mem_stats.max_active_pct,
-                        'memory/max_reserved(GiB)': device_mem_stats.max_reserved_gib,
-                        'memory/max_reserved(%)': device_mem_stats.max_reserved_pct,
-                        'memory/num_alloc_retries': device_mem_stats.num_alloc_retries,
-                        'memory/num_ooms': device_mem_stats.num_ooms,
+                        "memory/max_active(GiB)": device_mem_stats.max_active_gib,
+                        "memory/max_active(%)": device_mem_stats.max_active_pct,
+                        "memory/max_reserved(GiB)": device_mem_stats.max_reserved_gib,
+                        "memory/max_reserved(%)": device_mem_stats.max_reserved_pct,
+                        "memory/num_alloc_retries": device_mem_stats.num_alloc_retries,
+                        "memory/num_ooms": device_mem_stats.num_ooms,
                     }
                 logger.info(
                     history.update(
                         {
-                            'step': train_state.step,
+                            "step": train_state.step,
                             # 'loss': global_avg_loss,
                             # 'tps': tps,
                             # 'mfu': mfu,
                             **metrics,
                         }
                     )
-                    .replace('loss_metrics/', '')
-                    .replace('time_metrics/', '')
-                    .replace('memory/', '')
+                    .replace("loss_metrics/", "")
+                    .replace("time_metrics/", "")
+                    .replace("memory/", "")
                 )
 
                 metric_logger.log(metrics, step=train_state.step)
@@ -547,7 +533,7 @@ def main(job_config: JobConfig):
                     device_memory_monitor.reset_peak_stats()
                 except Exception as e:
                     if train_state.step == 1:
-                        logger.error(f'Error resetting memory stats: {e}')
+                        logger.error(f"Error resetting memory stats: {e}")
 
             checkpoint.save(
                 train_state.step,
@@ -564,22 +550,20 @@ def main(job_config: JobConfig):
             # (assuming lazy init and compilation are finished)
             if train_state.step == 1:
                 utils.set_pg_timeouts(
-                    timeout=timedelta(
-                        seconds=job_config.comm.train_timeout_seconds
-                    ),
+                    timeout=timedelta(seconds=job_config.comm.train_timeout_seconds),
                     world_mesh=world_mesh,
                 )
 
     if torch.distributed.get_rank() == 0:
-        logger.info('Sleeping 2 seconds for other ranks to complete')
+        logger.info("Sleeping 2 seconds for other ranks to complete")
         time.sleep(2)
 
     metric_logger.close()
-    logger.info('Training completed')
+    logger.info("Training completed")
     torch.distributed.destroy_process_group()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # torch._dynamo.config.suppress_errors = True  # type:ignore
     config = JobConfig()
     config.parse_args()
