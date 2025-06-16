@@ -23,23 +23,22 @@ authors = [{ name = 'Sam Foreman', email = 'saforem2@gmail.com' }]
 #   'Programming Language :: Python :: Implementation :: PyPy',
 # ]
 dependencies = [
-  'mpi4py',
-  'torch',
-  'torchdata',
+  # 'mpi4py',
+  # 'torch',
+  # 'torchdata',
   'rich',
   'transformers',
   'datasets',
   # Tokenization
   'blobfile',
   'tiktoken',
-  'timm',
+  # 'timm',
   # Miscellaneous
   'torchinfo',
   'tomli',
   'wandb',
   'tqdm',
   'ezpz @ git+https://github.com/saforem2/ezpz',
-  'ambivalent @ git+https://github.com/saforem2/ambivalent',
 ]
 
 
@@ -49,7 +48,6 @@ dev = [
   'matplotx',
   'nodejs',
   'pynvim',
-  'neovim',
   'pyright',
   'ruff',
   'ipython',

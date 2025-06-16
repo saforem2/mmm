@@ -22,10 +22,7 @@ In particular, we can use the `ezpz_setup_env` helper function[^ezpz_setup_env]
 to automatically take care of all of our required environment setup:
 
 ```bash
-# if @ ALCF, set:
-# PBS_O_WORKDIR=$(pwd)
-source <(curl -s https://raw.githubusercontent.com/saforem2/ezpz/refs/heads/main/src/ezpz/bin/utils.sh)
-ezpz_setup_env
+source <(curl -L https://bit.ly/ezpz-utils) && ezpz_setup_env
 ```
 
 - 🪄 This will, _automagically_:
@@ -50,7 +47,6 @@ ezpz_setup_env
     }
     ```
 
-
 [^any]: This has been tested and confirmed to work on:
 
     - Any job behind a {PBS, slurm} job scheduler
@@ -60,15 +56,16 @@ ezpz_setup_env
     - Distributed CPUs via `mpirun`
     - Distributed `mps` devices via `mpirun`
 
-    Both PBS and Slurm job schedulers are supported and the specifics of the running job will be used to populate the corresponding `launch` command.
+    Both PBS and Slurm job schedulers are supported and the specifics of the
+    running job will be used to populate the corresponding `launch` command.
 
 ### ⬇️ Install
 
 Armed with a functional python installation[^requires], we can install `mmm`.
 
-[^requires]: 
+[^requires]:
     Requires:
-    
+
     - 🔥 [pytorch/`pytorch`](https://pytorch.org)
     - 🍋 [saforem2/`ezpz`](https://github.com/saforem2/ezpz)
     - 📡 [mpi4py/`mpi4py`](https://github.com/mpi4py/mpi4py)
