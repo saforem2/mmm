@@ -32,7 +32,7 @@ TORCH_DTYPES_MAP = {
 
 
 def string_list(raw_arg: str) -> list[str]:
-    return raw_arg.split(",")
+    return [item.strip() for item in raw_arg.split(",")]
 
 
 @dataclass
