@@ -94,12 +94,13 @@ def main(job_config: JobConfig):
             if 'mmm' not in fp.parent.stem
             else f'mmm.{fp.stem}'
         )
-        run = ezpz.setup_wandb(project_name=wbname)
-        assert run is not None  # and run is wandb.run
-        # from dataclasses import asdict
+        if wandb is not None:
+            run = ezpz.setup_wandb(project_name=wbname)
+            assert run is not None  # and run is wandb.run
+            # from dataclasses import asdict
 
-        wandb.run.config.update(job_config.to_dict())  # type:ignore
-        # wandb.run.config.update(asdict(job_config))  # type:ignore
+            wandb.run.config.update(job_config.to_dict())  # type:ignore
+            # wandb.run.config.update(asdict(job_config))  # type:ignore
 
     # dpsize = world_size // tpsize
     # device_mesh = init_device_mesh(
@@ -217,8 +218,8 @@ def main(job_config: JobConfig):
             ]
         )
     )
-    if wandb is not None and wandb.run is not None:
-        wandb.run.config.update(
+    if wandb is not None and getattr(wandb, 'run', None) is not None:
+        wandb.run.config.update(  # type:ignore
             {
                 'model_param_count': model_param_count,
                 'num_flop_per_token': num_flop_per_token,
