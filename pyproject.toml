@@ -32,8 +32,8 @@ dependencies = [
   # Tokenization
   'blobfile',
   'tiktoken',
-  'timm',
   # Miscellaneous
+  # 'timm',
   'torchinfo',
   'tomli',
   'wandb',
