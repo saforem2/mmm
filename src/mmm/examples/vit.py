@@ -1,5 +1,7 @@
 """
 mmm/trainer/vit.py
+
+Train a simple Vision Transformer (ViT) model using PyTorch and FSDP.
 """
 
 import argparse
@@ -7,16 +9,16 @@ import functools
 import os
 from pathlib import Path
 import time
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import ezpz
-from timm.models.vision_transformer import VisionTransformer
 import torch
-import torch._dynamo
+
+# import torch._dynamo
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
 
-from mmm.configs import TORCH_DTYPES_MAP, TrainArgs, ViTConfig
+from mmm.configs import TORCH_DTYPES_MAP, TrainArgs, timmViTConfig
 from mmm.models import summarize_model
 
 from mmm.data.vision import get_fake_data  # , get_mnist
@@ -25,17 +27,34 @@ from mmm.models.vit.attention import AttentionBlock
 logger = ezpz.get_logger(__name__)
 
 
-def parse_args() -> TrainArgs:
+def parse_args() -> argparse.Namespace:
+    """
+    Parse command line arguments for training a Vision Transformer (ViT) model.
+    """
     parser = argparse.ArgumentParser(
         prog='mmm.train.vit',
         description='Train a simple ViT',
     )
-    parser.add_argument('--img_size', default=224, help='Image size')
-    parser.add_argument('--batch_size', default=128, help='Batch size')
-    parser.add_argument('--num_heads', default=16, help='Number of heads')
-    parser.add_argument('--head_dim', default=64, help='Hidden Dimension')
-    parser.add_argument('--depth', default=24, help='Depth')
-    parser.add_argument('--patch_size', default=16, help='Patch size')
+    parser.add_argument('--img_size', type=int, default=224, help='Image size')
+    parser.add_argument(
+        '--batch_size', type=int, default=128, help='Batch size'
+    )
+    parser.add_argument(
+        '--num_heads', type=int, default=16, help='Number of heads'
+    )
+    parser.add_argument(
+        '--head_dim', type=int, default=64, help='Hidden Dimension'
+    )
+    # parser.add_argument("--num_layers", default=24, help="Number of layers")
+    parser.add_argument(
+        '--depth',
+        type=int,
+        default=24,
+        help='Depth of the model (number of layers)',
+    )
+    parser.add_argument(
+        '--patch_size', type=int, default=16, help='Patch size'
+    )
     parser.add_argument('--dtype', default='bf16', help='Data type')
     parser.add_argument('--compile', action='store_true', help='Compile model')
     parser.add_argument('--num_workers', default=0, help='Number of workers')
@@ -58,12 +77,17 @@ def parse_args() -> TrainArgs:
         ],
         help='CUDA SDPA backend to use.',
     )
-    # return TrainArgs(**parser.parse_args())
-    # return TrainArgs(**vars(parser.parse_args()))
     return parser.parse_args()
 
 
 def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
+    """
+    Train a Vision Transformer model with the given block function and arguments.
+
+    Args:
+        block_fn (Any): The block function to use for the model.
+        args (TrainArgs): The training arguments.
+    """
     seed = int(os.environ.get('SEED', '0'))
     rank = ezpz.setup(backend='DDP', seed=seed)
     world_size = ezpz.get_world_size()
@@ -71,11 +95,12 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
     local_rank = ezpz.get_local_rank()
     device_type = str(ezpz.get_torch_device(as_torch_device=False))
     device = torch.device(f'{device_type}:{local_rank}')
-    config = ViTConfig(
+    config = timmViTConfig(
         img_size=args.img_size,
         batch_size=args.batch_size,
         num_heads=args.num_heads,
         head_dim=args.head_dim,
+        # num_layers=args.num_layers,
         depth=args.depth,
         patch_size=args.patch_size,
     )
@@ -97,10 +122,26 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
     #     drop_last=True,
     # )
 
+    # from torchvision.models.vision_transformer import VisionTransformer
+    # model = VisionTransformer(
+    #     image_size=config.img_size,
+    #     patch_size=config.patch_size,
+    #     num_layers=config.num_layers,
+    #     num_heads=config.num_heads,
+    #     hidden_dim=config.hidden_dim,
+    #     mlp_dim=config.mlp_dim,
+    #     dropout=config.dropout,
+    #     attention_dropout=config.attention_dropout,
+    #     num_classes=
+    # )
+    #
+    from timm.models.vision_transformer import VisionTransformer  # type:ignore
+
     model = VisionTransformer(
         img_size=config.img_size,
         patch_size=config.patch_size,
         embed_dim=(config.num_heads * config.head_dim),
+        # num_layers=config.num_layers,
         depth=config.depth,
         num_heads=config.num_heads,
         class_token=False,
@@ -200,10 +241,19 @@ def train_fn(block_fn: Any, args: TrainArgs) -> ezpz.History:
 
 
 def main():
+    """
+    Main function to set up the training environment and start training a Vision Transformer model.
+
+    This function initializes the training arguments, sets up the distributed
+    environment, configures the model, and calls the training function.
+    """
+    _ = ezpz.setup_torch()
     # torch._dynamo.config.suppress_errors = True  # type:ignore
-    rank = ezpz.setup_torch(
-        backend=os.environ.get('BACKEND', 'DDP'),
-    )
+    # try:
+    # _ = ezpz.setup_torch(
+    #     backend=os.environ.get('BACKEND', 'DDP'),
+    # )
+    # except:
     # return TrainArgs(**vars(parser.parse_args()))
     args = parse_args()
     if ezpz.get_rank() == 0 and not os.environ.get('WANDB_DISABLED', False):
@@ -218,7 +268,7 @@ def main():
         wandb.run.config.update({**vars(args)})  # type:ignore
 
     train_args: TrainArgs = TrainArgs(**vars(args))
-    config = ViTConfig(
+    config = timmViTConfig(
         img_size=args.img_size,
         batch_size=args.batch_size,
         num_heads=args.num_heads,
@@ -230,6 +280,17 @@ def main():
     def attn_fn(
         q: torch.Tensor, k: torch.Tensor, v: torch.Tensor
     ) -> torch.Tensor:
+        """
+        Custom attention function that applies scaled dot-product attention.
+
+        Args:
+            q (torch.Tensor): Query tensor.
+            k (torch.Tensor): Key tensor.
+            v (torch.Tensor): Value tensor.
+
+        Returns:
+            torch.Tensor: Output tensor after applying attention.
+        """
         scale = config.head_dim ** (-0.5)
         q = q * scale
         attn = q @ k.transpose(-2, -1)
@@ -264,7 +325,7 @@ def main():
     else:
         raise ValueError(f'Unknown attention type: {args.attn_type}')
     logger.info(f'Using AttentionBlock Attention with {args.compile=}')
-    train_fn(block_fn, args)
+    train_fn(block_fn, train_args)
 
 
 if __name__ == '__main__':

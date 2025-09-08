@@ -49,7 +49,6 @@ dev = [
   'matplotx',
   'nodejs',
   'pynvim',
-  'neovim',
   'pyright',
   'ruff',
   'ipython',
